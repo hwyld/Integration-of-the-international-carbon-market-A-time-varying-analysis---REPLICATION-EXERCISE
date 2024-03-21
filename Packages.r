@@ -6,6 +6,7 @@
 load_packages <- function() {
   # List of packages with descriptions
   packages <- list(
+    "devtools" = "install and load packages from GitHub",
     "ggplot2" = "flexible package for plotting in R", 
     "rio" = "easily read data into R", 
     "car" = "joint linear restrictions in R", 
