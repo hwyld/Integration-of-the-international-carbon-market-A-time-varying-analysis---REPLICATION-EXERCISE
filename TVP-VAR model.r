@@ -9,7 +9,7 @@ install.packages("vars")
 library(vars)
 
 # Import your data
-# Assuming your data is already imported and named appropriately
+
 
 # Specify the lag order
 lag_order <- 1  # Change this as needed
