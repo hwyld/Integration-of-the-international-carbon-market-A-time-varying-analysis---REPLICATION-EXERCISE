@@ -33,7 +33,7 @@ head(df,5)
 # Replace the Column names with the first row
 colnames(df) <- df[1, ]
 
-#### Extract the Allowance Price data ####
+#### Extract the Allowance Price data in original currency ####
 #-----------------------------------------
 
 # Create a dataframe called allowance_price and import the the Date column first
@@ -50,13 +50,21 @@ for (i in indices) {
   allowance_price <- cbind(allowance_price, df[, i])
 }
 
-# Remove the first 2 rows
-allowance_price <- allowance_price[-c(1:2), ]
+# Concatentate the first 3 rows to create the column names and call the column names 'Full Names'
+col_names <- paste(allowance_price[1, ], allowance_price[2, ], allowance_price[3, ], sep = "_")
+
+# Rename the column names to that of the first row
+colnames(allowance_price) <- col_names
+
+# Remove the first 3 rows
+allowance_price <- allowance_price[-c(1:3), ]
 
 # Rename the first column to "Date"
 colnames(allowance_price)[1] <- "Date"
 
 head(allowance_price,5)
+
+
 
 # Convert the dataframe to a daily time series
 allowance_price <- as.data.frame(allowance_price)
@@ -77,7 +85,7 @@ for (i in 2:ncol(allowance_price)) {
 #### Extract the EUR denominated Allowance Price data ####
 #--------------------------------------------------------
 
-# Create a dataframe called EUR_denom_allowance_prices and import the the Date column first
+# Create a dataframe called EUR_denom_allowance_prices and import the  Date column first
 EUR_denom_allowance_prices <- df[, 1]
 
 nrow(EUR_denom_allowance_prices)
@@ -110,9 +118,6 @@ EUR_denom_allowance_prices <- EUR_denom_allowance_prices[-c(1:1), ]
 # Convert the dataframe to a daily time series
 EUR_denom_allowance_prices <- as.data.frame(EUR_denom_allowance_prices)
 
-# Look at a few values in the 'Date' column
-head(EUR_denom_allowance_prices$Date)
-
 # Convert the Date column to a date format
 EUR_denom_allowance_prices$Date <- as.Date(EUR_denom_allowance_prices$Date, format = "%d.%m.%Y")
 
@@ -126,13 +131,47 @@ head(EUR_denom_allowance_prices,5)
 #--------------------------------------------------------
 
 
-#### PLot the data - Allowance Price ####
+# Export as a CSV file
+write.csv(allowance_price, "allowance_price.csv")
+write.csv(EUR_denom_allowance_prices, "EUR_denom_allowance_prices.csv")
+
+#### Data Trimming ####
+# Allowance price data set
+#----------------------
+# Trim data sets to only cover EU ETS, Hubei ETS, NZ ETS, and WCI ETS
+
+# Call the new allowance_price to Research_Data_allowance_price
+# Only keep columns 2, 3, 4, 6, and 3rd to last column, remove others
+Research_Data_allowance_price <- allowance_price[, c(1, 2, 3, 6, ncol(allowance_price)-2)]
+
+# Trim the data to cover only April 30, 2014 through December 1, 2021
+# Call the new Research_Data_allowance_price to Research_Data_allowance_price_trimmed
+Research_Data_allowance_price_trimmed <- Research_Data_allowance_price[Research_Data_allowance_price$Date >= "2014-04-30" & Research_Data_allowance_price$Date <= "2021-12-01", ]
+
+#----------------------
+
+# EUR_denom data set
+#----------------------
+
+# Trim data sets to only cover EU ETS, Hubei ETS, NZ ETS, and WCI ETS
+
+# Call the new EUR_denom_allowance_prices to Research_Data_EUR_denom_allowance_prices
+# Only keep columns 2, 3, 4, 6, and 3rd to last column, remove others
+Research_Data_EUR_denom_allowance_prices <- EUR_denom_allowance_prices[, c(1, 2, 3, 6, ncol(EUR_denom_allowance_prices)-2)]
+
+# Trim the data to cover only April 30, 2014 through December 1, 2021
+# Call the new Research_Data_EUR_denom_allowance_prices to Research_Data_EUR_denom_allowance_prices_trimmed
+Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices[Research_Data_EUR_denom_allowance_prices$Date >= "2014-04-30" & Research_Data_EUR_denom_allowance_prices$Date <= "2021-12-01", ]
+
+#----------------------
+
+#### Plot the data - Allowance Price ####
 #---------------------------------------
 # Load required packages
 library(tidyverse)
 
 # Reshape the data to long format
-allowance_price_long <- allowance_price %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
+allowance_price_long <- Research_Data_allowance_price_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
 
 # Plot the time series
 ggplot(allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
@@ -140,13 +179,16 @@ ggplot(allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
   labs(x = "Date", y = "Value", color = "Variable") +
   theme_minimal()
 
+# Save the plot
+ggsave("Allowance_Price_Plot.png",bg = "white")
+
 #---------------------------------------
 
-#### PLot the data - EUR denominated prices ####
+#### Plot the data - EUR denominated prices ####
 #---------------------------------------
 
 # Reshape the data to long format
-EUR_denom_allowance_prices_long <- EUR_denom_allowance_prices %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
+EUR_denom_allowance_prices_long <- Research_Data_EUR_denom_allowance_prices_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
 
 # Plot the time series
 ggplot(EUR_denom_allowance_prices_long, aes(x = Date, y = Value, color = Variable)) +
@@ -154,11 +196,11 @@ ggplot(EUR_denom_allowance_prices_long, aes(x = Date, y = Value, color = Variabl
   labs(x = "Date", y = "Value", color = "Variable") +
   theme_minimal()
 
+# Save the plot with a white background
+ggsave("EUR_denom_Allowance_Price_Plot.png", bg = "white")
+
 #---------------------------------------
 
-# Export as a CSV file
-write.csv(allowance_price, "allowance_price.csv")
-write.csv(EUR_denom_allowance_prices, "EUR_denom_allowance_prices.csv")
 
 # Descriptive stats for both dataframes
 
