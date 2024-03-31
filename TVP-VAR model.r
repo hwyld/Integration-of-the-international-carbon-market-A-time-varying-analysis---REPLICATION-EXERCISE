@@ -3,6 +3,10 @@
 ## Author: Henry Wyld
 ## Date of creation: 2024-03-20
 
+## References
+## https://sites.google.com/view/davidgabauer/econometric-code?authuser=0
+## https://sites.google.com/site/fk83research/code?authuser=0
+
 
 # Install and load required packages
 install.packages("vars")

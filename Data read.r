@@ -15,6 +15,12 @@ rm(list=ls())
 library(readxl)
 library(dplyr)
 library(readr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+library(tibble)
+library(data.table)
+library(xts)
 
 # Set the working directory
 setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ICAP data")
@@ -142,11 +148,11 @@ write.csv(EUR_denom_allowance_prices, "EUR_denom_allowance_prices.csv")
 
 # Call the new allowance_price to Research_Data_allowance_price
 # Only keep columns 2, 3, 4, 6, and 3rd to last column, remove others
-Research_Data_allowance_price <- allowance_price[, c(1, 2, 3, 6, ncol(allowance_price)-2)]
+Research_Data_allowance_price_trimmed <- allowance_price[, c(1, 2, 3, 6, ncol(allowance_price)-2)]
 
 # Trim the data to cover only April 30, 2014 through December 1, 2021
 # Call the new Research_Data_allowance_price to Research_Data_allowance_price_trimmed
-Research_Data_allowance_price_trimmed <- Research_Data_allowance_price[Research_Data_allowance_price$Date >= "2014-04-30" & Research_Data_allowance_price$Date <= "2021-12-01", ]
+#Research_Data_allowance_price_trimmed <- Research_Data_allowance_price[Research_Data_allowance_price$Date >= "2014-04-30" & Research_Data_allowance_price$Date <= "2021-12-01", ]
 
 #----------------------
 
@@ -157,13 +163,33 @@ Research_Data_allowance_price_trimmed <- Research_Data_allowance_price[Research_
 
 # Call the new EUR_denom_allowance_prices to Research_Data_EUR_denom_allowance_prices
 # Only keep columns 2, 3, 4, 6, and 3rd to last column, remove others
-Research_Data_EUR_denom_allowance_prices <- EUR_denom_allowance_prices[, c(1, 2, 3, 6, ncol(EUR_denom_allowance_prices)-2)]
+Research_Data_EUR_denom_allowance_prices_trimmed <- EUR_denom_allowance_prices[, c(1, 2, 3, 6, ncol(EUR_denom_allowance_prices)-2)]
 
 # Trim the data to cover only April 30, 2014 through December 1, 2021
 # Call the new Research_Data_EUR_denom_allowance_prices to Research_Data_EUR_denom_allowance_prices_trimmed
-Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices[Research_Data_EUR_denom_allowance_prices$Date >= "2014-04-30" & Research_Data_EUR_denom_allowance_prices$Date <= "2021-12-01", ]
+#Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices[Research_Data_EUR_denom_allowance_prices$Date >= "2014-04-30" & Research_Data_EUR_denom_allowance_prices$Date <= "2021-12-01", ]
+
+# Trim California data (Col 3) from each - TEMP SOLUTION
+Research_Data_allowance_price_trimmed <- Research_Data_allowance_price_trimmed[-3]
+Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices_trimmed[-3]
+
 
 #----------------------
+
+
+####### Data Cleaning ########
+
+#---------------------------------------
+
+# Allowance price data set
+# Replace any invalid values or NAs with last valid observation
+#Research_Data_allowance_price_trimmed <- zoo::na.locf(Research_Data_allowance_price_trimmed)
+
+# EUR_denom data set
+# Replace any invalid values or NAs with last valid observation
+#Research_Data_EUR_denom_allowance_prices_trimmed <- zoo::na.locf(Research_Data_EUR_denom_allowance_prices_trimmed)
+
+#---------------------------------------
 
 #### Plot the data - Allowance Price ####
 #---------------------------------------
@@ -201,11 +227,12 @@ ggsave("EUR_denom_Allowance_Price_Plot.png", bg = "white")
 
 #---------------------------------------
 
-
-# Descriptive stats for both dataframes
-
-str(allowance_price)
-str(EUR_denom_allowance_prices)
+#### Export the data ####
+# Export cleaned and trimmed data
+#---------------------------------------
+write.csv(Research_Data_allowance_price_trimmed, "Research_Data_allowance_price_trimmed.csv")
+write.csv(Research_Data_EUR_denom_allowance_prices_trimmed, "Research_Data_EUR_denom_allowance_prices_trimmed.csv")
+#---------------------------------------
 
 # stop the script
 #stop()
