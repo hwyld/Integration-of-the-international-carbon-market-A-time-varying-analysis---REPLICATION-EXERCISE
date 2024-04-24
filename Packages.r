@@ -1,5 +1,6 @@
-# ECOM90022 Research Methods Semester 1, 2024
-# Helpful functions for installing and loading packages
+## ECOM90022 Research Methods, Semester 1, 2024
+## Replication for Chenyan Lyu, Bert Scholtens, Integration of the international carbon market: A time-varying analysis, Renewable and Sustainable Energy Reviews, Volume 191,
+## Helpful functions for installing and loading packages
 # Henry Wyld
 
 # Function to install and load packages

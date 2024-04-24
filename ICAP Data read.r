@@ -1,4 +1,5 @@
 ## ECOM90022 Research Methods, Semester 1, 2024
+## Replication for Chenyan Lyu, Bert Scholtens, Integration of the international carbon market: A time-varying analysis, Renewable and Sustainable Energy Reviews, Volume 191,
 ## Read the ICAP Price Explorer data and format in R
 ## Author: Henry Wyld
 ## Date of creation: 2024-03-21
@@ -21,6 +22,7 @@ library(lubridate)
 library(tibble)
 library(data.table)
 library(xts)
+library(plotly)
 
 # Set the working directory
 setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ICAP data")
@@ -230,8 +232,12 @@ ggsave("EUR_denom_Allowance_Price_Plot.png", bg = "white")
 #### Export the data ####
 # Export cleaned and trimmed data
 #---------------------------------------
-write.csv(Research_Data_allowance_price_trimmed, "Research_Data_allowance_price_trimmed.csv")
-write.csv(Research_Data_EUR_denom_allowance_prices_trimmed, "Research_Data_EUR_denom_allowance_prices_trimmed.csv")
+write.csv(Research_Data_allowance_price_trimmed, "ICAP_allowance_price_trimmed.csv")
+write.csv(Research_Data_EUR_denom_allowance_prices_trimmed, "ICAP_EUR_denom_allowance_prices_trimmed.csv")
+
+# Publish both data sets to Git
+
+
 #---------------------------------------
 
 # stop the script

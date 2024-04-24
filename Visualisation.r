@@ -1,4 +1,5 @@
 ## ECOM90022 Research Methods, Semester 1, 2024
+## Replication for Chenyan Lyu, Bert Scholtens, Integration of the international carbon market: A time-varying analysis, Renewable and Sustainable Energy Reviews, Volume 191,
 ## Visualisation of Time-Varying Parameters Vector Autoregression (TVP-VAR) Model
 ## Author: Henry Wyld
 ## Date of creation: 2024-03-20
