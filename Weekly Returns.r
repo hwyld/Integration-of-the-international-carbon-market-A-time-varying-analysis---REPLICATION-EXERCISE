@@ -22,17 +22,231 @@ library(lubridate)
 library(tibble)
 library(data.table)
 library(xts)
+install.packages("psych")
+library(psych)
 
 # Set the working directory
-setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ICAP data")
+setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/Data")
 
 # Read the CSV file
-df <- readr::read_csv("Research_Data_EUR_denom_allowance_prices_trimmed.csv", locale = readr::locale(encoding = "UTF-8"))
+ICAP_df <- readr::read_csv("ICAP_EUR_denom_allowance_prices_trimmed.csv", locale = readr::locale(encoding = "UTF-8"))
+Clearblue_df <- readr::read_csv("Clearblue_data.csv", locale = readr::locale(encoding = "UTF-8"))
 
-# Remove the first two columns
-Research_Data <- df[, -c(1:1)]
+# Rename the DateTime column to Date
+Clearblue_df <- rename(Clearblue_df, Date = DateTime)
+
+
+# Function to convert dataframe to xts, assuming the first column is the date
+convert_to_xts <- function(df, date_col_name, date_format = "%Y-%m-%d") {
+  # Check if the date column exists
+  if (!date_col_name %in% names(df)) {
+    stop("Date column specified does not exist in the dataframe")
+  }
+  
+  # Convert the date column to Date class
+  date_col <- as.Date(df[[date_col_name]], format = date_format)
+  
+  # Convert all other columns to numeric
+  data_cols <- df[, !(names(df) %in% date_col_name)]
+  data_cols <- data.frame(lapply(data_cols, function(x) as.numeric(as.character(x))))
+  
+  # Create the xts object
+  xts_object <- xts(data_cols, order.by = date_col)
+  
+  return(xts_object)
+}
+
+# Example usage:
+# Assuming ICAP_df and Clearblue_df are already loaded and have the correct date columns
+ICAP_df_xts <- convert_to_xts(ICAP_df, "Date")
+Clearblue_df_xts <- convert_to_xts(Clearblue_df, "Date")
+
+# Remove the first column of ICAP_df
+ICAP_df_xts <- ICAP_df_xts[, -1]
+
+
+head(ICAP_df_xts, 5)
+head(Clearblue_df_xts, 5)
+
+# Function to find start and end dates excluding NA
+get_valid_dates <- function(series) {
+  valid_dates <- index(series[!is.na(series)])  # Get dates for non-NA values
+  start_date <- format(min(valid_dates), "%Y-%m-%d")
+  end_date <- format(max(valid_dates), "%Y-%m-%d")
+  return(c(Start = start_date, End = end_date))
+}
+
+# Apply the function to each column
+valid_date_info_ICAP <- sapply(ICAP_df_xts, get_valid_dates)
+valid_date_info_Clearblue <- sapply(Clearblue_df_xts, get_valid_dates)
+
+# Compute summary statistics for each series, excluding NA values
+summary_stats_ICAP <- sapply(ICAP_df_xts, function(x) describe(x[!is.na(x)]))
+summary_stats_Clearblue <- sapply(Clearblue_df_xts, function(x) describe(x[!is.na(x)]))
+
+# Function to merge summary statistics with date info
+#combine_stats_and_dates <- function(stats, dates) {
+#  stats_df <- as.data.frame(t(stats))
+#  dates_df <- as.data.frame(t(dates))
+#  combined <- cbind(stats_df, dates_df)
+#  return(combined)
+#}
+
+# Apply the function to each series
+#final_results_ICAP <- Map(combine_stats_and_dates, summary_stats_ICAP, valid_date_info_ICAP)
+#final_results_Clearblue <- Map(combine_stats_and_dates, summary_stats_Clearblue, valid_date_info_Clearblue)
+
+# Load knitr for table output
+#---------------------------------------
+
+if (!require("knitr")) install.packages("knitr", dependencies=TRUE)
+library(knitr)
+
+# Display tables
+sapply(summary_stats_ICAP, knitr::kable)
+sapply(summary_stats_Clearblue, knitr::kable)
+
+# Creating and printing tables for statistics
+kable(summary_stats_ICAP, caption = "Summary Statistics for ICAP Dataset")
+kable(summary_stats_Clearblue, caption = "Summary Statistics for Clearblue Dataset")
+
+# Creating and printing tables for dates
+kable(valid_date_info_ICAP, caption = "Start and End Dates for ICAP Dataset")
+kable(valid_date_info_Clearblue, caption = "Start and End Dates for Clearblue Dataset")
+
+# Export the Tables with stargazer
+#install.packages("stargazer")
+library(stargazer)
+
+# Export and save the tables to HTML
+length(summary_stats_ICAP)
+
+### Need to round the values to 3 decimal places
+summary_stats_ICAP <- round(summary_stats_ICAP, 3)
+summary_stats_Clearblue <- round(summary_stats_Clearblue, 3)
+
+stargazer(summary_stats_ICAP, 
+          type = "html", 
+          digits=3, align=TRUE,
+          intercept.bottom=FALSE,
+          title = "Summary Statistics for ICAP Dataset",
+          out= "table1.html")
+
+stargazer(summary_stats_Clearblue, 
+          type = "html", 
+          digits=3, align=TRUE,
+          intercept.bottom=FALSE,
+          title = "Summary Statistics for Clearblue Dataset",
+          out= "table2.html")
+
+stargazer(valid_date_info_ICAP, type = "html", title = "Start and End Dates for ICAP Dataset",out= "table3.html")
+stargazer(valid_date_info_Clearblue, type = "html", title = "Start and End Dates for Clearblue Dataset",out= "table4.html")
+
+
+#---------------------------------------
+
+#### Create the Research Data ####
+# EU ETS based on ICAP : EUR_EUR 
+# NZ ETS based on ICAP : NZ_EUR 
+# CCA ETS based on Clearblue : CCA...Front.December...ICE
+# Hubei ETS based on ICAP : Hubei_EUR 
+#---------------------------------------
+# Create the Dataframe by merging the ICAP and Clearblue dataframes
+df <- merge(ICAP_df_xts, Clearblue_df_xts, by = "Date")
+colnames(df)
+
+# Keep the following columns
+
+Research_Data <- df[, c("EUR_EUR", "NZ_EUR", "CCA...Front.December...ICE", "Hubei_EUR")]
+
+head(df, 5)
+head(Research_Data, 5)
+
+# Upload Research Data to global environment
+assign("Research_Data", Research_Data, envir = .GlobalEnv)
+
+#---------------------------------------
 
 ####### Data Transformation ########
+### Handling NAs 
+#---------------------------------------
+# Summarize NA presence in Research_Data
+summary(is.na(Research_Data))
+
+# Load necessary package
+if (!require(zoo)) {
+    install.packages("zoo")
+}
+library(zoo)
+
+# Forward fill NA values (carry forward the last known value)
+Research_Data_ffill <- na.locf(Research_Data)
+
+summary(is.na(Research_Data_ffill))
+
+# plot both the original and forward filled data on the same plot
+# Convert xts objects to data frames, capturing Date indices
+Research_Data_df <- data.frame(Date = index(Research_Data), coredata(Research_Data))
+Research_Data_ffill_df <- data.frame(Date = index(Research_Data_ffill), coredata(Research_Data_ffill))
+
+# Add a 'Type' column to distinguish between original and forward-filled data
+Research_Data_df$Type <- "Original"
+Research_Data_ffill_df$Type <- "Forward-Filled"
+
+# Combine the data frames
+combined_df <- rbind(Research_Data_df, Research_Data_ffill_df)
+
+# Melt the data for plotting (if using ggplot2 and the data is wide)
+if (!require(reshape2)) install.packages("reshape2")
+library(reshape2)
+combined_df_long <- melt(combined_df, id.vars = c("Date", "Type"), variable.name = "Variable", value.name = "Price")
+
+# Plot using ggplot2
+ggplot(combined_df_long, aes(x = Date, y = Price, color = Type, linetype = Type)) +
+    geom_line() +
+    facet_wrap(~ Variable, scales = "free_y") +  # Create a separate plot for each variable
+    labs(title = "Comparison of Original vs Forward-Filled Data", x = "Date", y = "Price") +
+    scale_color_manual(values = c("Original" = "blue", "Forward-Filled" = "red")) +
+    theme_minimal()
+
+# Subset into individual vectors
+
+# Define the function
+subsetAndCleanNA <- function(data) {
+  # Validate input data type
+  if (!inherits(data, c("data.frame", "xts"))) {
+    stop("The data must be a data frame or an xts object.")
+  }
+  
+  # Initialize a list to store cleaned data for each column
+  cleaned_data_list <- list()
+  
+  # Get the number of columns
+  num_columns <- ncol(data)
+  
+  # Loop over each column in the dataset
+  for (i in 1:num_columns) {
+    # Extract the column data, ensuring it remains an appropriate object
+    column_data <- data[, i, drop = FALSE]  # Avoid dropping dimensions
+
+    # Remove NA values
+    clean_column_data <- column_data[complete.cases(column_data), , drop = FALSE]
+
+    # Add the cleaned column to the list
+    cleaned_data_list[[names(data)[i]]] <- clean_column_data
+  }
+
+  # Return the list of cleaned data
+  return(cleaned_data_list)
+}
+
+
+# Assuming 'Research_Data_ffill' is an xts object that has been forward-filled
+cleaned_datasets <- subsetAndCleanNA(Research_Data_ffill)
+
+# Check results
+lapply(cleaned_datasets, head)  # Display the head of each dataset in the list
+
 #### Weekly Returns ####
 #---------------------------------------
 
@@ -40,67 +254,32 @@ Research_Data <- df[, -c(1:1)]
 
 #----------------------
 
-
-# Log prices of the data but keep date column
-Research_Data_log_prices <- Research_Data %>%
-  mutate(across(where(is.numeric), log))
-
-# Daily returns
-Research_Data_daily_returns <- Research_Data_log_prices %>% 
-  mutate(across(where(is.numeric), ~ . - lag(.)))  
-
-# Add a column that contains the day of the week
-Research_Data_daily_returns$Day <- weekdays(as.Date(Research_Data_daily_returns$Date))
-
-# Add 3 new columns that sum the daily returns for each week from Friday to Friday
-Research_Data_daily_returns <- Research_Data_daily_returns %>%
-  # Ensure 'Date' is in Date format
-  mutate(Date = as.Date(Date)) %>%
-  # Create a 'WeekID' that identifies weeks based on Fridays but starts from 1
-  mutate(WeekID = cumsum(wday(Date) == 6)) %>%
-  # Group by this 'WeekID' to ensure aggregation from Friday to Friday
-  group_by(WeekID) %>%
-  # Sum the returns for each group
-  mutate(EUR_EUR_Weekly_Return = sum(EUR_EUR, na.rm = TRUE),
-         NZ_EUR_Weekly_Return = sum(NZ_EUR, na.rm = TRUE),
-         Hubei_EUR_Weekly_Return = sum(Hubei_EUR, na.rm = TRUE)) %>%
-  # Ungroup to remove the grouping structure
-  ungroup()
-
-# Calculate weekly return from the sum of the continuous daily returns from Friday to Friday
-Research_Data_continuously_compounded_weekly_returns <- Research_Data_daily_returns %>%
-  filter(Day == "Friday") %>%
-  select(Date,WeekID, EUR_EUR_Weekly_Return, NZ_EUR_Weekly_Return, Hubei_EUR_Weekly_Return)
-
-# WeekID to Date dataframe
-Research_Data_weekly_dates <- Research_Data_daily_returns %>%
-  filter(Day == "Friday") %>%
-  select(Date, WeekID)
-
-# REDUNDANT CODE - DO NOT USE
-#---------------------------------------
-
-# Calculate weekly return from the sum of the continuous daily returns from Friday to Friday
-# Sum the daily returns for each week
-# Research_Data_weekly_returns_cont <- Research_Data_daily_returns %>% 
-#  mutate(across(where(is.numeric), ~ sum(.)))
-
-# Trim Research_Data_allowance_price_trimmed to only include Friday dates
-# Research_Data_Fridays <- Research_Data_log_prices[weekdays(Research_Data_log_prices$Date) == "Friday", ]
+# Install and load quantmod
+if (!require(quantmod)) install.packages("quantmod", dependencies=TRUE)
+library(quantmod)
 
 
-# Calculate first difference of the trimmed dataset
-# Research_Data_weekly_returns <- Research_Data_Fridays %>% 
-#  mutate(across(where(is.numeric), ~ . - lag(.)))
+# Applying log to all numeric columns directly in an xts object
+Research_Data_log_prices <- log(Research_Data)
 
-# Convert the dataframes to time series
-# Research_Data_weekly_returns <- xts(Research_Data_weekly_returns[, -1], order.by = as.Date(Research_Data_weekly_returns$Date, format = "%Y-%m-%d"))
+# Calculate daily returns
+daily_returns <- Delt(x = Research_Data, k = 1, type = "arithmetic")  # or use dailyReturn(Research_Data)
 
-# Log difference of the data
-# Research_Data_weekly_returns <- log(Research_Data_Fridays[, -1]) - log(lag(Research_Data_Fridays[, -1]))
+# Resample the data to weekly frequency, ensuring it ends on Friday
+weekly_data <- to.period(Research_Data, period = "weeks", indexAt = "lastof", k = 1, endof = "week", wday = 6)
 
-# Convert the dataframes to time series
-# Research_Data_weekly_returns <- xts(Research_Data_weekly_returns[, -1], order.by = as.Date(Research_Data_weekly_returns$Date, format = "%Y-%m-%d"))
+# Calculate log returns using the endpoint values of the weekly data
+weekly_log_returns <- diff(log(Cl(weekly_data)))  # Using diff(log()) directly for log returns
+
+# Remove NA values from returns
+weekly_log_returns <- na.omit(weekly_log_returns)
+
+# Print the first few rows of returns to check
+print(head(weekly_log_returns))
+
+# Plot the weekly log returns
+plot(weekly_log_returns, main = "Continuously Compounded Weekly Returns", col = "blue", ylab = "Log Returns")
+
 
 #---------------------------------------
 

@@ -171,9 +171,11 @@ Research_Data_EUR_denom_allowance_prices_trimmed <- EUR_denom_allowance_prices[,
 # Call the new Research_Data_EUR_denom_allowance_prices to Research_Data_EUR_denom_allowance_prices_trimmed
 #Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices[Research_Data_EUR_denom_allowance_prices$Date >= "2014-04-30" & Research_Data_EUR_denom_allowance_prices$Date <= "2021-12-01", ]
 
+head(Research_Data_EUR_denom_allowance_prices_trimmed,5)
+
 # Trim California data (Col 3) from each - TEMP SOLUTION
-Research_Data_allowance_price_trimmed <- Research_Data_allowance_price_trimmed[-3]
-Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices_trimmed[-3]
+#Research_Data_allowance_price_trimmed <- Research_Data_allowance_price_trimmed[-3]
+#Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices_trimmed[-3]
 
 
 #----------------------
@@ -198,6 +200,7 @@ Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allo
 # Load required packages
 library(tidyverse)
 
+## Domestic Currency Allowance prices ##
 # Reshape the data to long format
 allowance_price_long <- Research_Data_allowance_price_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
 
@@ -209,6 +212,18 @@ ggplot(allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
 
 # Save the plot
 ggsave("Allowance_Price_Plot.png",bg = "white")
+
+## EUR denominated Allowance prices ##
+EUR_allowance_price_long <- Research_Data_EUR_denom_allowance_prices_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
+
+# Plot the time series
+ggplot(EUR_allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
+  geom_line() +
+  labs(x = "Date", y = "Value", color = "Variable") +
+  theme_minimal()
+
+# Save the plot
+ggsave("EUR Allowance_Price_Plot.png",bg = "white")
 
 #---------------------------------------
 
@@ -241,4 +256,4 @@ write.csv(Research_Data_EUR_denom_allowance_prices_trimmed, "ICAP_EUR_denom_allo
 #---------------------------------------
 
 # stop the script
-#stop()
+stop()
