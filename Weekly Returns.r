@@ -28,13 +28,14 @@ library(psych)
 # Set the working directory
 setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/Data")
 
+####### Import and Format Data #######
+#---------------------------------------
 # Read the CSV file
 ICAP_df <- readr::read_csv("ICAP_EUR_denom_allowance_prices_trimmed.csv", locale = readr::locale(encoding = "UTF-8"))
 Clearblue_df <- readr::read_csv("Clearblue_data.csv", locale = readr::locale(encoding = "UTF-8"))
 
 # Rename the DateTime column to Date
 Clearblue_df <- rename(Clearblue_df, Date = DateTime)
-
 
 # Function to convert dataframe to xts, assuming the first column is the date
 convert_to_xts <- function(df, date_col_name, date_format = "%Y-%m-%d") {
@@ -56,18 +57,20 @@ convert_to_xts <- function(df, date_col_name, date_format = "%Y-%m-%d") {
   return(xts_object)
 }
 
-# Example usage:
-# Assuming ICAP_df and Clearblue_df are already loaded and have the correct date columns
+# Use ICAP_df and Clearblue_df to create xts objects
 ICAP_df_xts <- convert_to_xts(ICAP_df, "Date")
 Clearblue_df_xts <- convert_to_xts(Clearblue_df, "Date")
 
 # Remove the first column of ICAP_df
 ICAP_df_xts <- ICAP_df_xts[, -1]
 
-
 head(ICAP_df_xts, 5)
 head(Clearblue_df_xts, 5)
 
+#---------------------------------------
+
+####### Summary Statistics #######
+#---------------------------------------
 # Function to find start and end dates excluding NA
 get_valid_dates <- function(series) {
   valid_dates <- index(series[!is.na(series)])  # Get dates for non-NA values
@@ -96,9 +99,8 @@ summary_stats_Clearblue <- sapply(Clearblue_df_xts, function(x) describe(x[!is.n
 #final_results_ICAP <- Map(combine_stats_and_dates, summary_stats_ICAP, valid_date_info_ICAP)
 #final_results_Clearblue <- Map(combine_stats_and_dates, summary_stats_Clearblue, valid_date_info_Clearblue)
 
+## Display the Summary Statistics
 # Load knitr for table output
-#---------------------------------------
-
 if (!require("knitr")) install.packages("knitr", dependencies=TRUE)
 library(knitr)
 
@@ -142,10 +144,9 @@ stargazer(summary_stats_Clearblue,
 stargazer(valid_date_info_ICAP, type = "html", title = "Start and End Dates for ICAP Dataset",out= "table3.html")
 stargazer(valid_date_info_Clearblue, type = "html", title = "Start and End Dates for Clearblue Dataset",out= "table4.html")
 
-
 #---------------------------------------
 
-#### Create the Research Data ####
+####### Create the Research Data #######
 # EU ETS based on ICAP : EUR_EUR 
 # NZ ETS based on ICAP : NZ_EUR 
 # CCA ETS based on Clearblue : CCA...Front.December...ICE
@@ -168,7 +169,9 @@ assign("Research_Data", Research_Data, envir = .GlobalEnv)
 #---------------------------------------
 
 ####### Data Transformation ########
-### Handling NAs 
+
+### Handling Missing Data/NAs ###
+## Forward Fill NA values ##
 #---------------------------------------
 # Summarize NA presence in Research_Data
 summary(is.na(Research_Data))
@@ -209,88 +212,81 @@ ggplot(combined_df_long, aes(x = Date, y = Price, color = Type, linetype = Type)
     scale_color_manual(values = c("Original" = "blue", "Forward-Filled" = "red")) +
     theme_minimal()
 
-# Subset into individual vectors
-
+## Subset into individual vectors ##
 # Define the function
 subsetAndCleanNA <- function(data) {
-  # Validate input data type
   if (!inherits(data, c("data.frame", "xts"))) {
     stop("The data must be a data frame or an xts object.")
   }
   
-  # Initialize a list to store cleaned data for each column
   cleaned_data_list <- list()
-  
-  # Get the number of columns
   num_columns <- ncol(data)
   
-  # Loop over each column in the dataset
   for (i in 1:num_columns) {
-    # Extract the column data, ensuring it remains an appropriate object
-    column_data <- data[, i, drop = FALSE]  # Avoid dropping dimensions
-
-    # Remove NA values
+    column_data <- data[, i, drop = FALSE]
     clean_column_data <- column_data[complete.cases(column_data), , drop = FALSE]
-
-    # Add the cleaned column to the list
     cleaned_data_list[[names(data)[i]]] <- clean_column_data
   }
-
-  # Return the list of cleaned data
+  
   return(cleaned_data_list)
 }
 
-
 # Assuming 'Research_Data_ffill' is an xts object that has been forward-filled
 cleaned_datasets <- subsetAndCleanNA(Research_Data_ffill)
-
-# Check results
 lapply(cleaned_datasets, head)  # Display the head of each dataset in the list
 
+
 #### Weekly Returns ####
+## From Paper: Weekly returns are calculated as the change in log price, from Friday-to-Friday. The continuously compounded returns of four sets 
 #---------------------------------------
 
-## From Paper: Weekly returns are calculated as the change in log price, from Friday-to-Friday. The continuously compounded returns of four sets 
-
-#----------------------
-
-# Install and load quantmod
 if (!require(quantmod)) install.packages("quantmod", dependencies=TRUE)
 library(quantmod)
 
+calculate_weekly_returns <- function(data) {
+  aligned_data <- apply.weekly(data, FUN = last)
+  returns <- diff(log(aligned_data))
+  return(na.omit(returns))
+}
 
-# Applying log to all numeric columns directly in an xts object
-Research_Data_log_prices <- log(Research_Data)
+# Initialize the weekly returns list directly with proper names
+weekly_returns_list <- vector("list", length = length(cleaned_datasets))
+names(weekly_returns_list) <- names(cleaned_datasets)
 
-# Calculate daily returns
-daily_returns <- Delt(x = Research_Data, k = 1, type = "arithmetic")  # or use dailyReturn(Research_Data)
+# Loop through each column in cleaned_datasets to calculate weekly returns
+for (i in seq_along(cleaned_datasets)) {
+  # Extract column as an individual xts object
+  individual_series <- cleaned_datasets[[i]]  # Access the correct list element
+  # Calculate weekly returns for the series
+  weekly_returns_list[[i]] <- calculate_weekly_returns(individual_series)
+}
 
-# Resample the data to weekly frequency, ensuring it ends on Friday
-weekly_data <- to.period(Research_Data, period = "weeks", indexAt = "lastof", k = 1, endof = "week", wday = 6)
+# Check if you've loaded the zoo package for plotting
+if (!require(zoo)) install.packages("zoo")
+library(zoo)
 
-# Calculate log returns using the endpoint values of the weekly data
-weekly_log_returns <- diff(log(Cl(weekly_data)))  # Using diff(log()) directly for log returns
+# Example of plotting the first series' returns if not empty
+if (length(weekly_returns_list[[1]]) > 0) {
+  plot(as.zoo(weekly_returns_list[[1]]), main = "Weekly Logarithmic Returns", xlab = "Date", ylab = "Log Returns", col = "blue")
+} else {
+  cat("No data to plot for the first series.")
+}
 
-# Remove NA values from returns
-weekly_log_returns <- na.omit(weekly_log_returns)
+# Combine the weekly returns into a single xts object
+weekly_returns <- do.call(merge, weekly_returns_list)
 
-# Print the first few rows of returns to check
-print(head(weekly_log_returns))
-
-# Plot the weekly log returns
-plot(weekly_log_returns, main = "Continuously Compounded Weekly Returns", col = "blue", ylab = "Log Returns")
+head(weekly_returns, 5)
 
 
-#---------------------------------------
-
+### SUBSET DATA ###
 # Trim the data to only include the dates from 2014-04-30 to 2021-12-01 (inclusive)
 # Wednesday 30th April 2014 to Wednesday 1st December 2021
-weekly_returns_trimmed <- Research_Data_continuously_compounded_weekly_returns[Research_Data_continuously_compounded_weekly_returns$Date >= "2014-04-30" & Research_Data_continuously_compounded_weekly_returns$Date <= "2021-12-01", ]
+Research_Data_weekly_returns <- weekly_returns["2014-04-30/2021-12-01"]
 
-last(weekly_returns_trimmed, 5)
+last(Research_Data_weekly_returns, 5)
 
 # Study has 397 observations
-nrow(weekly_returns_trimmed)
+nrow(Research_Data_weekly_returns)
 
 #---------------------------------------
 
@@ -298,73 +294,93 @@ nrow(weekly_returns_trimmed)
 # From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
 
 #---------------------------------------
-
-
 # Calculate standard deviation of weekly return over the five-day interval during each week
-Research_Data_weekly_volatility <- Research_Data_daily_returns %>%
-  filter(Day != "Saturday" & Day != "Sunday") %>%
-  group_by(WeekID) %>%
-  summarise(EUR_EUR_Weekly_Volatility = sd(EUR_EUR, na.rm = TRUE),
-            NZ_EUR_Weekly_Volatility = sd(NZ_EUR, na.rm = TRUE),
-            Hubei_EUR_Weekly_Volatility = sd(Hubei_EUR, na.rm = TRUE)) %>%
-  ungroup()
-
-# Add the date to the weekly volatility dataframe
-Research_Data_weekly_volatility <- merge(Research_Data_weekly_volatility, Research_Data_weekly_dates, by = "WeekID")
-
-# Annualise the weekly volatility
-Research_Data_annualised_weekly_volatility <- Research_Data_weekly_volatility %>%
-  mutate(across(where(is.numeric), ~ . * sqrt(52) * 100))
-
-
-
-# Function to calculate weekly volatility for each week
-calculate_weekly_volatility <- function(daily_returns) {
-  M <- nrow(daily_returns)  # number of trading days, usually 5
-  weekly_volatility <- apply(daily_returns, 2, function(returns) {
-    mean_return <- mean(returns)
-    sqrt(sum((returns - mean_return)^2) / (M - 1))
-  })
+calculate_weekly_volatility <- function(data) {
+  weekly_volatility <- apply.weekly(data, FUN = sd)
   return(weekly_volatility)
 }
 
-# Function to annualize the weekly volatility
-annualize_weekly_volatility <- function(weekly_volatility) {
-  annualized_volatility <- weekly_volatility * sqrt(52) * 100
-  return(annualized_volatility)
+# Initialize the weekly volatility list directly with proper names
+weekly_volatility_list <- vector("list", length = length(cleaned_datasets))
+names(weekly_volatility_list) <- names(cleaned_datasets)
+
+# Loop through each column in cleaned_datasets to calculate weekly volatility
+for (i in seq_along(cleaned_datasets)) {
+  # Extract column as an individual xts object
+  individual_series <- cleaned_datasets[[i]]  # Access the correct list element
+  # Calculate weekly volatility for the series
+  weekly_volatility_list[[i]] <- calculate_weekly_volatility(individual_series)
 }
 
+# Combine the weekly volatility into a single xts object
+weekly_volatility <- do.call(merge, weekly_volatility_list)
 
-weekly_volatility <- calculate_weekly_volatility(daily_returns)
-annualized_volatility <- annualize_weekly_volatility(weekly_volatility)
-
-
+head(weekly_volatility, 5)
 #---------------------------------------
 
 
 #### Descriptive statistics ####
+## From Paper: "The descriptive statistics of the weekly returns and weekly volatility are presented in Table 2 in Panel A and B."
 
-# Descriptive stats for both dataframes
-#install.packages("psych")
-library(psych)
+#---------------------------------------
+# Function to find start and end dates excluding NA
+Research_Data_dates <- sapply(Research_Data_weekly_returns, get_valid_dates)
 
-# Basic descriptive statistics
-summary(Research_Data_EUR_denom_allowance_prices_trimmed)
+# Compute summary statistics for each series, excluding NA values
+summary_stats <- sapply(Research_Data_weekly_returns, function(x) describe(x))
 
-# Get detailed descriptive statistics
-describe(Research_Data_EUR_denom_allowance_prices_trimmed)
+# Round to 3 decimal places
+# Rounding only numeric columns in a data frame
+summary_stats[] <- lapply(summary_stats, function(x) {
+  if (is.numeric(x)) round(x, 3) else x
+})
+
+## Display the Summary Statistics
+# Load knitr for table output
+if (!require("knitr")) install.packages("knitr", dependencies=TRUE)
+library(knitr)
+
+# Display tables
+sapply(summary_stats, knitr::kable)
+
+# Creating and printing tables for statistics
+kable(summary_stats, caption = "Summary Statistics for Carbon Price Weekly Return")
+
+# Creating and printing tables for dates
+kable(Research_Data_dates, caption = "Start and End Dates for each Carbon Price Weekly Return Dataset")
+
+# Export the Tables with stargazer
+
+stargazer(summary_stats, 
+          type = "html", 
+          digits = 3, align=TRUE,
+          intercept.bottom=FALSE,
+          title = "Summary Statistics for Carbon Price Weekly Return",
+          out= "Summary Statistics for Carbon Price Weekly Return.html")
+
+stargazer(Research_Data_dates,
+         type = "html", 
+         title = "Start and End Dates for each Carbon Price Weekly Return Dataset", # nolint
+         out= "Start and End Dates for each Carbon Price Weekly Return Dataset.html")
 
 # Plot the data
 
-# Plot the weekly returns
-ggplot(Research_Data_continuously_compounded_weekly_returns, aes(x = Date)) +
-  geom_line(aes(y = EUR_EUR_Weekly_Return, color = "EUR_EUR")) +
-  geom_line(aes(y = NZ_EUR_Weekly_Return, color = "NZ_EUR")) +
-  geom_line(aes(y = Hubei_EUR_Weekly_Return, color = "Hubei_EUR")) +
+# Plot the weekly returns as 4 separate charts for each series but merge them into one file
+# Convert xts objects to data frames, capturing Date indices
+Research_Data_continuously_compounded_weekly_returns <- data.frame(Date = index(Research_Data_weekly_returns), coredata(Research_Data_weekly_returns))
+
+# Melt the data for plotting (if using ggplot2 and the data is wide)
+Research_Data_continuously_compounded_weekly_returns_long <- melt(Research_Data_continuously_compounded_weekly_returns, id.vars = "Date", variable.name = "Series", value.name = "Weekly_Return")
+
+# Create 4 separate plots for each series and save them in the save file as a 2 by 2 grid
+# Plot the weekly returns for each series
+ggplot(Research_Data_continuously_compounded_weekly_returns_long, aes(x = Date)) +
+  geom_line(aes(y = Weekly_Return, color = Series)) +
   labs(title = "Weekly Returns",
        x = "Date",
        y = "Weekly Return") +
-  scale_color_manual(values = c("EUR_EUR" = "blue", "NZ_EUR" = "red", "Hubei_EUR" = "green")) +
+  scale_color_manual(values = c("EUR_EUR" = "blue", "NZ_EUR" = "red", "CCA...Front.December...ICE" = "green", "Hubei_EUR" = "purple")) +
+  facet_wrap(~ Series, scales = "free_y") +  # Create a separate plot for each series
   theme_minimal()
 
 # Save plots together in one file
