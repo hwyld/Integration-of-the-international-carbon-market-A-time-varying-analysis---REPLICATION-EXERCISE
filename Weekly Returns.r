@@ -212,6 +212,9 @@ ggplot(combined_df_long, aes(x = Date, y = Price, color = Type, linetype = Type)
     scale_color_manual(values = c("Original" = "blue", "Forward-Filled" = "red")) +
     theme_minimal()
 
+# Save plot as a PNG file
+ggsave("Forward_Filled_Data_Plot.png", bg = "white")
+
 ## Subset into individual vectors ##
 # Define the function
 subsetAndCleanNA <- function(data) {
@@ -290,9 +293,10 @@ nrow(Research_Data_weekly_returns)
 
 #---------------------------------------
 
-#### Volatilty ####
-# From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
+#### Annualised Weekly Volatilty ####
 
+# From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
+## NOT COMPLETE YET ##
 #---------------------------------------
 # Calculate standard deviation of weekly return over the five-day interval during each week
 calculate_weekly_volatility <- function(data) {

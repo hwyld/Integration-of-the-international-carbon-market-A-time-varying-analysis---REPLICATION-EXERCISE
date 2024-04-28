@@ -9,29 +9,33 @@
 rm(list=ls())    
 #----------------------------------
 
-# Load required packages
-#load_packages()
+## Packages ##
+#----------------------------------
+# Source the package setup script
+Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for-Carbon-Markets"
+setwd(Git)
+source("Packages.R")
 
 
 # Load necessary libraries
-library(readxl)
-library(dplyr)
-library(readr)
-library(tidyr)
-library(ggplot2)
-library(lubridate)
-library(tibble)
-library(data.table)
-library(xts)
-install.packages("htmltools")
-library(htmltools)
-install.packages("plotly")
-library(plotly)
-install.packages("radiant")
-install.packages("httpgd")
-library(httpgd)
+#library(readxl)
+#library(dplyr)
+#library(readr)
+#library(tidyr)
+#library(ggplot2)
+#library(lubridate)
+#library(tibble)
+#library(data.table)
+#library(xts)
+#install.packages("htmltools")
+#library(htmltools)
+#install.packages("plotly")
+#library(plotly)
+#install.packages("radiant")
+#install.packages("httpgd")
+#library(httpgd)
 
-update.packages(ask = FALSE)
+update.packages(ask = TRUE)
 
 # Set the working directory
 setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ClearBlue Data/Data used in Paper")

@@ -6,29 +6,37 @@
 
 #-------------------------------------
 # clear memory
-rm(list=ls())    
+rm(list = ls())
 #----------------------------------
 
-# Load required packages
-#load_packages()
+## Packages ##
+#----------------------------------
+# Source the package setup script
+Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for-Carbon-Markets"
+setwd(Git)
+source("Packages.R")
+
+# Install the latest version of htmltools
+#remove.packages("htmltools")
+#install.packages("htmltools")
+#packageVersion("htmltools")
+#library(plotly)
 
 # Import your data
-library(readxl)
-library(dplyr)
-library(readr)
-library(tidyr)
-library(ggplot2)
-library(lubridate)
-library(tibble)
-library(data.table)
-library(xts)
-library(plotly)
+#library(readxl)
+#library(dplyr)
+#library(readr)
+#library(tidyr)
+#library(ggplot2)
+#library(lubridate)
+#library(tibble)
+#library(data.table)
+#library(xts)
+
+#----------------------------------
 
 # Set the working directory
-setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ICAP data")
-
-# Read the CSV file
-#df <- readr::read_csv("Raw ICAP Data trimmed.csv", locale = readr::locale(encoding = "UTF-8"))
+setwd(ICAP_Data)
 
 # Read the Excel file
 df <- readxl::read_excel("Raw ICAP Data.xlsx")
@@ -197,8 +205,6 @@ head(Research_Data_EUR_denom_allowance_prices_trimmed,5)
 
 #### Plot the data - Allowance Price ####
 #---------------------------------------
-# Load required packages
-library(tidyverse)
 
 ## Domestic Currency Allowance prices ##
 # Reshape the data to long format
@@ -217,10 +223,35 @@ ggsave("Allowance_Price_Plot.png",bg = "white")
 EUR_allowance_price_long <- Research_Data_EUR_denom_allowance_prices_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
 
 # Plot the time series
-ggplot(EUR_allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
+a <- ggplot(EUR_allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
   geom_line() +
   labs(x = "Date", y = "Value", color = "Variable") +
   theme_minimal()
+
+# Produce plotly graph
+p <- ggplotly(a)
+
+# Add a slider
+final_plot <- p %>% layout(
+  xaxis = list(
+    rangeselector = list(
+      buttons = list(
+        list(count = 1, label = "1m", step = "month", stepmode = "backward"),
+        list(count = 6, label = "6m", step = "month", stepmode = "backward"),
+        list(count = 1, label = "YTD", step = "year", stepmode = "backward"),
+        list(count = 5, label = "1y", step = "year", stepmode = "backward"),
+        list(step = "all")
+      )
+    ),
+    rangeslider = list(type = "date")
+  )
+)
+
+
+
+# Save the plot to an HTML file
+htmlwidgets::saveWidget(final_plot, "EUR_Allowance_Price_Plot.html")
+
 
 # Save the plot
 ggsave("EUR Allowance_Price_Plot.png",bg = "white")
@@ -251,8 +282,11 @@ write.csv(Research_Data_allowance_price_trimmed, "ICAP_allowance_price_trimmed.c
 write.csv(Research_Data_EUR_denom_allowance_prices_trimmed, "ICAP_EUR_denom_allowance_prices_trimmed.csv")
 
 # Publish both data sets to Git
-
-
+setwd(Git)
+# Final Data Set
+write.csv(Research_Data_EUR_denom_allowance_prices_trimmed, "ICAP_EUR_denom_allowance_prices_trimmed.csv")
+# Final HTML file
+htmlwidgets::saveWidget(final_plot, "EUR_Allowance_Price_Plot.html")
 #---------------------------------------
 
 # stop the script
