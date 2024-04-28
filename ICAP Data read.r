@@ -214,7 +214,9 @@ allowance_price_long <- Research_Data_allowance_price_trimmed %>% pivot_longer(-
 ggplot(allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
   geom_line() +
   labs(x = "Date", y = "Value", color = "Variable") +
-  theme_minimal()
+  theme_minimal() +
+  ggtitle("Local Currency Denominated Allowance Prices") +
+  labs(caption = "Source: ICAP")
 
 # Save the plot
 ggsave("Allowance_Price_Plot.png",bg = "white")
@@ -222,36 +224,51 @@ ggsave("Allowance_Price_Plot.png",bg = "white")
 ## EUR denominated Allowance prices ##
 EUR_allowance_price_long <- Research_Data_EUR_denom_allowance_prices_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
 
-# Plot the time series
+# Ensure your Date column is in POSIXct format
+EUR_allowance_price_long$Date <- as.POSIXct(EUR_allowance_price_long$Date, format = "%Y-%m-%d")
+
+# Plot the time series with the Title "EUR Denominated Allowance Prices" and Add source as ICAP
 a <- ggplot(EUR_allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
   geom_line() +
   labs(x = "Date", y = "Value", color = "Variable") +
-  theme_minimal()
+  theme_minimal() +
+  ggtitle("EUR Denominated Allowance Prices") +
+  labs(caption = "Source: ICAP")
 
-# Produce plotly graph
-p <- ggplotly(a)
+# Define custom JavaScript for dynamic x-axis adjustment
+customJS <- "
+function(el, x) {
+  var gd = document.getElementById(el.id);
+  gd.on('plotly_relayout', function(eventdata){
+    // Check if the eventdata has an x-axis update
+    if(eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
+      var update = {
+        'xaxis.range': [eventdata['xaxis.range[0]'], eventdata['xaxis.range[1]']]
+      };
+      Plotly.relayout(gd, update);
+    }
+  });
+}
+"
 
-# Add a slider
+# Add range selector buttons and apply onRender with custom JavaScript
 final_plot <- p %>% layout(
   xaxis = list(
+    type = "date",
     rangeselector = list(
       buttons = list(
-        list(count = 1, label = "1m", step = "month", stepmode = "backward"),
         list(count = 6, label = "6m", step = "month", stepmode = "backward"),
-        list(count = 1, label = "YTD", step = "year", stepmode = "backward"),
-        list(count = 5, label = "1y", step = "year", stepmode = "backward"),
-        list(step = "all")
+        list(count = 1, label = "1y", step = "year", stepmode = "backward"),
+        list(count = 5, label = "5y", step = "year", stepmode = "backward"),
+        list(step = "all", label = "All")
       )
     ),
-    rangeslider = list(type = "date")
+    rangeslider = list(visible = TRUE)
   )
-)
+) %>% onRender(customJS)
 
-
-
-# Save the plot to an HTML file
-htmlwidgets::saveWidget(final_plot, "EUR_Allowance_Price_Plot.html")
-
+# Display the final plot
+final_plot
 
 # Save the plot
 ggsave("EUR Allowance_Price_Plot.png",bg = "white")

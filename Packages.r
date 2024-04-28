@@ -24,6 +24,7 @@ load_packages <- function(update = FALSE) {
     stringr = "string operations", 
     lubridate = "date-time manipulations",
     htmltools = "tools for HTML generation and output",
+    htmlwidgets = "widgets for HTML output",
     plotly = "interactive plots in R",
     radiant = "interface for business analytics in R",
     httpgd = "graphics device for R",
@@ -35,7 +36,8 @@ load_packages <- function(update = FALSE) {
     rmarkdown = "dynamic documents in R",
     igraph = "network analysis in R",
     vars = "vector autoregression models in R",
-    bsts = "Bayesian structural time series models in R"
+    bsts = "Bayesian structural time series models in R",
+    gtable = "tables in R"
   )
 
   # Update all packages if specified

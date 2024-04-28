@@ -35,16 +35,15 @@ source("Packages.R")
 #install.packages("httpgd")
 #library(httpgd)
 
-update.packages(ask = TRUE)
 
 # Set the working directory
-setwd("C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ClearBlue Data/Data used in Paper")
+setwd(Clearblue_Data)
 
 ## Read the datasets from Excel files ##
 #-----------------------------------------
 
 # Set Paths to the Excel files
-path <- "C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ClearBlue Data/Data used in Paper"
+path <- Clearblue_Data
 
 # Create loop to read all Excel files in the directory
 files <- list.files(path, pattern = "*.xlsx", full.names = TRUE)
@@ -117,21 +116,9 @@ colnames(merged_data)[6] <- "CCA - Cash Spot"
 
 #### Plot the data - Allowance Price ####
 #---------------------------------------
-# Load required packages
-library(tidyverse)
 
 # Plot the time series
-# Remove the existing gtable package
-remove.packages("gtable")
-
-# Reinstall gtable
-install.packages("gtable")
-
-# Load the package to check if it works
-library(gtable)
-#library(ggplot2)
-
-ggplot(merged_data, aes(x = DateTime)) +
+a <- ggplot(merged_data, aes(x = DateTime)) +
   geom_line(aes(y = `EUA - Front December - ICE`, color = "EUA")) +
   geom_line(aes(y = `NZU - Cash Spot`, color = "NZU")) +
   geom_line(aes(y = `CCA - Front December - ICE`, color = "CCA")) +
@@ -141,24 +128,65 @@ ggplot(merged_data, aes(x = DateTime)) +
   scale_color_manual(values = c("EUA" = "red", "NZU" = "blue", "CCA" = "#d0ff00")) +
   theme_minimal()
 
+# Convert to Plotly object
+p <- ggplotly(a)
+
+# Define custom JavaScript for dynamic x-axis adjustment
+customJS <- "
+function(el, x) {
+  var gd = document.getElementById(el.id);
+  gd.on('plotly_relayout', function(eventdata){
+    if(eventdata['xaxis.range[0]'] && eventdata['xaxis.range[1]']) {
+      var update = {
+        'xaxis.range': [eventdata['xaxis.range[0]'], eventdata['xaxis.range[1]']]
+      };
+      Plotly.relayout(gd, update);
+    }
+  });
+}
+"
+
+# Add range selector buttons, source annotation, and apply onRender with custom JavaScript
+final_plot <- p %>% layout(
+  xaxis = list(
+    type = "date",
+    rangeselector = list(
+      buttons = list(
+        list(count = 6, label = "6m", step = "month", stepmode = "backward"),
+        list(count = 1, label = "1y", step = "year", stepmode = "backward"),
+        list(count = 5, label = "5y", step = "year", stepmode = "backward"),
+        list(step = "all", label = "All")
+      )
+    ),
+    rangeslider = list(visible = TRUE)
+  ),
+  annotations = list(
+    list(
+      text = "Source: Clearblue",
+      x = 0.01, # Position on the x-axis
+      xref = "paper", # Relative to the entire width of the plot
+      y = -0.2, # Position on the y-axis
+      yref = "paper", # Relative to the entire height of the plot
+      showarrow = FALSE, # No arrow pointing
+      xanchor = "left",
+      yanchor = "top",
+      font = list(
+        family = "Arial",
+        size = 12,
+        color = "grey"
+      )
+    )
+  )
+) %>% onRender(customJS)
+
+# Display the final plot
+final_plot
+
+# Save the plot to an HTML file
+htmlwidgets::saveWidget(final_plot, "Clearblue_Price_Plot.html")
+
 # Save the plot
 ggsave("Clearblue_Plot.png",bg = "white")
-
-
-## EUR denominated Allowance prices ##
-EUR_allowance_price_long <- merged_data %>% pivot_longer(-DateTime, names_to = "Variable", values_to = "Value")
-
-# Plot the time series
-ggplot(EUR_allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
-  geom_line() +
-  labs(x = "Date", y = "Value", color = "Variable") +
-  theme_minimal()
-
-# Save the plot
-ggsave("Allowance_Price_Plot.png",bg = "white")
-
-
-#p <- plot_ly(merged_data, x = ~x, y = price, type = 'scatter', mode = 'lines')
 
 #---------------------------------------
 
@@ -167,3 +195,10 @@ merged_data <- merged_data[order(merged_data$DateTime), ]
 
 # Save the merged data to a CSV file
 write.csv(merged_data, "Clearblue_data.csv", row.names = FALSE)
+
+# Publish both data sets to Git
+setwd(Git)
+# Final Data Set
+write.csv(merged_data, "Clearblue_data.csv")
+# Final HTML file
+htmlwidgets::saveWidget(final_plot, "Clearblue_Price_Plot.html")
