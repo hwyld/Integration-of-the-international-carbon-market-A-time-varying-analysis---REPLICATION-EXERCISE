@@ -41,8 +41,6 @@ plot(dynamic_correlation_matrices, plot.type = "l")
 
 ## Using plotly for interactive plots
 
-library(plotly)
-
 # Plot Connectedness Index with plotly
 connectedness_plot <- plot_ly(x = ~time(tvp_var_fit), y = ~connectedness(tvp_var_fit), type = 'scatter', mode = 'lines', name = 'Connectedness Index')
 connectedness_plot <- connectedness_plot %>% layout(title = 'Connectedness Index Over Time')

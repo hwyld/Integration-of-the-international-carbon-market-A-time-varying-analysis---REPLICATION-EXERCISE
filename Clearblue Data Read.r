@@ -122,11 +122,12 @@ a <- ggplot(merged_data, aes(x = DateTime)) +
   geom_line(aes(y = `EUA - Front December - ICE`, color = "EUA")) +
   geom_line(aes(y = `NZU - Cash Spot`, color = "NZU")) +
   geom_line(aes(y = `CCA - Front December - ICE`, color = "CCA")) +
-  labs(title = "Clearblue Data Plot",
+  labs(title = "Local Currency Denominated Allowance Prices",
        x = "Date Time",
        y = "Price") +
   scale_color_manual(values = c("EUA" = "red", "NZU" = "blue", "CCA" = "#d0ff00")) +
-  theme_minimal()
+  theme_minimal() +
+  labs(caption = "Source: Clearblue")
 
 # Convert to Plotly object
 p <- ggplotly(a)

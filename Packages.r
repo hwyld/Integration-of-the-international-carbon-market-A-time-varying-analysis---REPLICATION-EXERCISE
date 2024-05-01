@@ -37,7 +37,13 @@ load_packages <- function(update = FALSE) {
     igraph = "network analysis in R",
     vars = "vector autoregression models in R",
     bsts = "Bayesian structural time series models in R",
-    gtable = "tables in R"
+    gtable = "tables in R",
+    stargazer = "create LaTeX tables in R",
+    languageserver = "language server for R",
+    knitr = "dynamic reports in R",
+    kableExtra = "create tables in R",
+    here = "manage paths in R",
+    reshape2 = "reshape data in R"
   )
 
   # Update all packages if specified
@@ -79,3 +85,4 @@ set_working_directories <- function() {
 # Call the functions to load packages and set directories when this script runs
 load_packages(update = FALSE)
 set_working_directories()
+
