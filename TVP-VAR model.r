@@ -8,24 +8,54 @@
 ## https://sites.google.com/view/davidgabauer/econometric-code?authuser=0
 ## https://sites.google.com/site/fk83research/code?authuser=0
 
+#-------------------------------------
+# clear memory
+rm(list=ls())    
+#----------------------------------
 
-# Install and load required packages
-install.packages("vars")
-library(vars)
+## Packages ##
+#----------------------------------
+# Source the package setup script
+Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for-Carbon-Markets"
+setwd(Git)
+source("Packages.R")
 
-# Import your data
-VAR_df <- read.csv("EUR_denom_allowance_prices.csv")
+## Import data ##
+#----------------------------------
+return_df <- read.csv("Research_Data_weekly_returns.csv")
+vol_df <- read.csv("Research_Data_weekly_volatility.csv")
 
-head(VAR_df,5)
+# Convert the data to zoo objects
+return_zoo <- zoo(return_df[, -1], order.by = as.Date(return_df$Date))
+vol_zoo <- zoo(vol_df[, -1], order.by = as.Date(vol_df$Date))
+
+# Assuming 'return_df' is your dataframe with time series data
+data_matrix <- as.matrix(return_df)
+
+head(data_matrix,5)
+#----------------------------------
+
+## TVP-VAR model ##
+#----------------------------------
 
 # Specify the lag order
 lag_order <- 1  # Change this as needed
 
-# Set up the TVP-VAR model
-tvp_var_model <- TVP_VAR(data = VAR_df, p = lag_order, type = "mcmc", draws = 1000)
+# Fit the Bayesian VAR model with stochastic volatilities
+# Setting hyperparameters and specifying the number of lags
+result <- bvar.sv.tvp(y = data_matrix, p = 1, draws = 5000, burnin = 1000)
+
 # The type argument specifies the estimation method. "mcmc" uses Markov Chain Monte Carlo (MCMC) methods.
 # The draws argument specifies the number of draws for the MCMC estimation.
 # Adjust draws as needed. More draws typically lead to better results but require more computation time.
+
+dca = ConnectednessApproach(return_zoo, 
+                            nlag=1, 
+                            nfore=10,
+                            window.size=200,
+                            model="TVP-VAR",
+                            connectedness="Time",
+                            VAR_config=list(TVPVAR=list(kappa1=0.99, kappa2=0.96, prior="BayesPrior")))
 
 # Estimate the TVP-VAR model
 tvp_var_fit <- fit(tvp_var_model)

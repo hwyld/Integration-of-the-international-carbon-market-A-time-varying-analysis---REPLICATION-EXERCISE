@@ -49,7 +49,11 @@ load_packages <- function(update = FALSE) {
     ggsci = "scientific journal themes for ggplot2",
     gganimate = "animations in ggplot2",
     ggforce = "add-on for ggplot2",
-    priceR = "financial data in R"
+    priceR = "financial data in R",
+    tseries = "time-series analysis in R",
+    TTR = "technical trading rules in R",
+    bvarsv = "Bayesian vector autoregression models in R",
+    ConnectednessApproach = "connectedness measures in R"
   )
 
   # Update all packages if specified
