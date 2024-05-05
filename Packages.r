@@ -43,7 +43,13 @@ load_packages <- function(update = FALSE) {
     knitr = "dynamic reports in R",
     kableExtra = "create tables in R",
     here = "manage paths in R",
-    reshape2 = "reshape data in R"
+    reshape2 = "reshape data in R",
+    ggthemes = "themes for ggplot2",
+    ggpubr = "publication-ready plots in R",
+    ggsci = "scientific journal themes for ggplot2",
+    gganimate = "animations in ggplot2",
+    ggforce = "add-on for ggplot2",
+    priceR = "financial data in R",
   )
 
   # Update all packages if specified

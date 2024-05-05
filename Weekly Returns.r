@@ -80,8 +80,6 @@ for (i in seq_along(weekly_returns_list)) {
 weekly_returns <- do.call(merge, weekly_returns_list)
 print(head(weekly_returns))
 
-
-
 #---------------------------------------
 
 #### Annualised Weekly Volatilty ####
@@ -109,7 +107,7 @@ for (i in seq_along(weekly_volatility_list)) {
 }
 
 # Optionally, check the results for the first series
-print(weekly_volatility_list[[1]])
+tail(weekly_volatility_list)
 
 # Annualise the weekly volatility
 annualised_weekly_volatility <- lapply(weekly_volatility_list, function(x) x * sqrt(52))
@@ -193,18 +191,18 @@ stargazer(summary_stats_returns,
           type = "html", 
           digits=3, align=TRUE,
           intercept.bottom=FALSE,
-          title = "Summary Statistics for ICAP Dataset",
-          out= "table1.html")
+          title = "Summary Statistics for Returns",
+          out= "Summary Statistics for Returns.html")
 
 stargazer(summary_stats_volatility, 
           type = "html", 
           digits=3, align=TRUE,
           intercept.bottom=FALSE,
-          title = "Summary Statistics for Clearblue Dataset",
-          out= "table2.html")
+          title = "Summary Statistics for Volatility",
+          out= "Summary Statistics for Volatility.html")
 
-stargazer(valid_date_returns, type = "html", title = "Start and End Dates for ICAP Dataset",out= "table3.html")
-stargazer(valid_date_volatility, type = "html", title = "Start and End Dates for Clearblue Dataset",out= "table4.html")
+stargazer(valid_date_returns, type = "html", title = "Start and End Dates for Returns",out= "Dates Returns.html")
+stargazer(valid_date_volatility, type = "html", title = "Start and End Dates for Clearblue Volatility",out= "Dates Returns.html")
 
 # Plot the data
 
@@ -279,4 +277,4 @@ ggplot(Research_Data_annualised_weekly_volatility_long, aes(x = Date)) +
   
 
 # Save plots together in one file
-ggsave("Weekly_Volatility_Plot.png", bg = "white")  
+ggsave("Weekly_Volatility_Plot.png", bg = "white")
