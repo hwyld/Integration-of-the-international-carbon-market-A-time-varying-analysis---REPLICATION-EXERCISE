@@ -49,7 +49,7 @@ load_packages <- function(update = FALSE) {
     ggsci = "scientific journal themes for ggplot2",
     gganimate = "animations in ggplot2",
     ggforce = "add-on for ggplot2",
-    priceR = "financial data in R",
+    priceR = "financial data in R"
   )
 
   # Update all packages if specified

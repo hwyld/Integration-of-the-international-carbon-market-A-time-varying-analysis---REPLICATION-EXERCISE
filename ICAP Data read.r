@@ -201,6 +201,10 @@ head(Research_Data_EUR_denom_allowance_prices_trimmed,5)
 # Replace any invalid values or NAs with last valid observation
 #Research_Data_EUR_denom_allowance_prices_trimmed <- zoo::na.locf(Research_Data_EUR_denom_allowance_prices_trimmed)
 
+# Remove weekends and public holidays
+Research_Data_allowance_price_trimmed <- Research_Data_allowance_price_trimmed[!weekdays(Research_Data_allowance_price_trimmed$Date) %in% c("Saturday", "Sunday"), ]
+Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices_trimmed[!weekdays(Research_Data_EUR_denom_allowance_prices_trimmed$Date) %in% c("Saturday", "Sunday"), ]
+
 #---------------------------------------
 
 #### Plot the data - Allowance Price ####

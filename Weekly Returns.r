@@ -4,6 +4,8 @@
 ## Author: Henry Wyld
 ## Date of creation: 2024-03-31
 
+## WEEKLY COLATILITY NEEDS CHECKING  - DIFF FROM PAPER##
+
 #-------------------------------------
 # clear memory
 rm(list=ls())    
@@ -15,19 +17,6 @@ rm(list=ls())
 Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for-Carbon-Markets"
 setwd(Git)
 source("Packages.R")
-
-
-# Install dplyr if it's not already installed
-if (!require(dplyr)) {
-    install.packages("dplyr")
-    library(dplyr)
-} else {
-    library(dplyr)
-}
-
-# Also ensure that xts and readr are loaded
-library(xts)
-library(readr)
 
 ####### Import and Format Data #######
 #---------------------------------------
@@ -83,10 +72,133 @@ print(head(weekly_returns))
 #---------------------------------------
 
 #### Annualised Weekly Volatilty ####
-
-# From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
 ## NOT COMPLETE YET ##
+# From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
+
 #---------------------------------------
+
+# Assuming cleaned_datasets_xts is already loaded and is an xts object
+daily_returns <- diff(log(cleaned_datasets_xts))  # calculate daily log returns
+
+# Create a weekly index to group by trading weeks
+weekly_index <- cut(index(daily_returns), breaks = "week", labels = FALSE)
+
+# Add the weekly index to the daily_returns data frame
+daily_returns <- cbind(as.data.frame(daily_returns), Week = weekly_index)
+
+# Check the structure of daily_returns
+str(daily_returns)
+
+cleaned_datasets_xts <- convert_to_xts(daily_returns, "Date")
+
+# Convert daily returns to an xts object
+daily_returns_xts <- xts(daily_returns[, -ncol(daily_returns)], order.by = index(daily_returns))
+
+# Calculate the average of the daily returns for each week and each market using aggregate 
+avg_weekly_returns <- aggregate(daily_returns, by = list(Week = weekly_index), FUN = mean)
+
+# Calculate the number of valid observations for each week and then subtract 1 to get the number of trading days
+num_trading_days <- aggregate(daily_returns, by = list(Week = weekly_index), FUN = function(x) sum(!is.na(x)))
+
+# Drop the last column from the avg_weekly_returns dataframe
+avg_weekly_returns <- avg_weekly_returns[, -ncol(avg_weekly_returns)]
+num_trading_days <- num_trading_days[, -ncol(num_trading_days)]
+
+# Add 4 new columns for the average weekly returns in eahc market to the daily_returns dataframe,do not use merge
+daily_returns$EUA_avg <- avg_weekly_returns$EUA[match(daily_returns$Week, avg_weekly_returns$Week)]
+daily_returns$NZU_avg <- avg_weekly_returns$NZU[match(daily_returns$Week, avg_weekly_returns$Week)]
+daily_returns$CCA_avg <- avg_weekly_returns$CCA[match(daily_returns$Week, avg_weekly_returns$Week)]
+daily_returns$HBEA_avg <- avg_weekly_returns$HBEA[match(daily_returns$Week, avg_weekly_returns$Week)]
+
+# Take squared difference between daily return and average weekly return
+daily_returns$EUA_diff <- (daily_returns$EUA - daily_returns$EUA_avg)^2
+daily_returns$NZU_diff <- (daily_returns$NZU - daily_returns$NZU_avg)^2
+daily_returns$CCA_diff <- (daily_returns$CCA - daily_returns$CCA_avg)^2
+daily_returns$HBEA_diff <- (daily_returns$HBEA - daily_returns$HBEA_avg)^2
+
+# Put the squared differences into a new data frame
+squared_diff <- daily_returns[, c("Week","EUA_diff", "NZU_diff", "CCA_diff", "HBEA_diff")]
+
+# Sum the squared differences for each week and each market, keep the weekly index as the first column
+sum_squared_diff <- aggregate(squared_diff[, -1], by = list(Week = squared_diff$Week), FUN = sum)
+
+# Divide the sum of squared differences by the number of trading days minus 1 to get the variance, do not apply on the Week column keeping this index within teh dataframe
+variance <- sum_squared_diff[, -1] / (num_trading_days[, -1] - 1)
+
+# Take the square root of the variance to get the standard deviation
+volatility <- sqrt(variance)
+
+# add the weekly index to the volaility data frame
+volatility <- cbind(as.data.frame(volatility), Week = sum_squared_diff$Week)
+
+# Ensure the volatility is still an xts object
+volatility_xts <- xts(volatility, order.by = index(weekly_index))
+
+#### --- 
+# Assuming cleaned_datasets_xts is already loaded and is an xts object
+daily_returns <- diff(log(cleaned_datasets_xts))  # calculate daily log returns
+
+# Create a weekly index to group by trading weeks
+weekly_index <- cut(index(daily_returns), breaks = "week", labels = FALSE)
+
+# Add the weekly index to the daily_returns data frame
+daily_returns <- cbind(as.data.frame(daily_returns), Week = weekly_index)
+
+# Calculate the average of the daily returns for each week and each market using aggregate
+avg_weekly_returns <- aggregate(daily_returns[, -ncol(daily_returns)], by = list(Week = weekly_index), FUN = mean)
+
+# Calculate the number of valid observations for each week and then subtract 1 to get the number of trading days
+num_trading_days <- aggregate(daily_returns[, -ncol(daily_returns)], by = list(Week = weekly_index), FUN = function(x) sum(!is.na(x)))
+
+# Ensure to remove extra columns if any exist after aggregation
+avg_weekly_returns <- avg_weekly_returns[, -ncol(avg_weekly_returns), drop = FALSE]
+num_trading_days <- num_trading_days[, -ncol(num_trading_days), drop = FALSE]
+
+# Assuming daily_returns is an xts object or convert it back to xts with correct indexing
+daily_returns_xts <- xts(daily_returns[, -ncol(daily_returns)], order.by = index(daily_returns))
+
+# Match and add average weekly returns to the daily_returns data frame
+for (market in colnames(daily_returns_xts)) {
+    avg_col_name <- paste(market, "avg", sep = "_")
+    daily_returns_xts[[avg_col_name]] <- avg_weekly_returns[[market]][match(daily_returns_xts$Week, avg_weekly_returns$Week)]
+    
+    # Calculate squared differences
+    diff_col_name <- paste(market, "diff", sep = "_")
+    daily_returns_xts[[diff_col_name]] <- (daily_returns_xts[[market]] - daily_returns_xts[[avg_col_name]])^2
+}
+
+# Aggregate squared differences to sum them up per week per market
+sum_squared_diff <- sapply(colnames(daily_returns_xts)[grepl("diff", colnames(daily_returns_xts))], function(col) {
+    tapply(daily_returns_xts[[col]], daily_returns_xts$Week, sum, na.rm = TRUE)
+}, simplify = "data.frame")
+
+# Calculate the variance
+variance <- sum_squared_diff / (num_trading_days$V1 - 1)
+
+# Take the square root of the variance to get the standard deviation
+volatility <- sqrt(variance)
+
+# Convert the volatility into an xts object
+volatility_xts <- xts(volatility, order.by = as.Date(names(sum_squared_diff$EUA_diff), format = "%Y-%U"))
+
+# Print results to verify
+print(head(volatility_xts))
+
+#---------------------------------------
+
+
+
+
+# Function to calculate daily returns and more detailed weekly statistics
+calculate_detailed_daily_returns <- function(data) {
+  # Calculate daily logarithmic returns
+  daily_returns <- diff(log(data))  # log returns
+
+  return(detailed_stats)
+}
+
+detailed_returns_stats <- calculate_detailed_daily_returns(cleaned_datasets_xts)
+
 # Calculate standard deviation of weekly return over the five-day interval during each week
 calculate_weekly_volatility <- function(data) {
   # Assume data is weekly returns; calculating standard deviation as a measure of volatility
@@ -149,9 +261,27 @@ get_valid_dates <- function(series) {
 valid_date_returns <- sapply(Research_Data_weekly_returns, get_valid_dates)
 valid_date_volatility <- sapply(Research_Data_weekly_volatility, get_valid_dates)
 
+# Print the structure and a summary of weekly returns to check for any anomalies
+print(str(Research_Data_weekly_returns))
+summary(Research_Data_weekly_returns)
+
+# count the number of NA values in the weekly returns
+sapply(Research_Data_weekly_returns, function(x) sum(is.na(x)))
+
+library(psych)
+
+# Safely apply describe to ensure it doesn't fail silently
+safe_describe <- function(x) {
+  if (length(x) > 0 && is.numeric(x)) {
+    describe(x)
+  } else {
+    return(NULL)  # or alternatively return a list with NA values for expected metrics
+  }
+}
+
 # Compute summary statistics for each series, excluding NA values
-summary_stats_returns <- sapply(Research_Data_weekly_returns, function(x) describe(x[!is.na(x)]))
-summary_stats_volatility <- sapply(Research_Data_weekly_volatility, function(x) describe(x[!is.na(x)]))
+summary_stats_returns <- sapply(Research_Data_weekly_returns, safe_describe)
+summary_stats_volatility <- sapply(Research_Data_weekly_volatility, safe_describe)
 
 ## Display the Summary Statistics
 # Load knitr for table output

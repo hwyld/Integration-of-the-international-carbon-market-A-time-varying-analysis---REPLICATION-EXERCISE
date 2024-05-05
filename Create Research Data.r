@@ -184,6 +184,9 @@ Research_Data_ffill_df$Type <- "Forward-Filled"
 # Combine the data frames
 combined_df <- rbind(Research_Data_df, Research_Data_ffill_df)
 
+# Remove non-trading days
+combined_df <- combined_df[!duplicated(combined_df$Date), ]
+
 # Melt the data for plotting (if using ggplot2 and the data is wide)
 
 combined_df_long <- melt(combined_df, id.vars = c("Date", "Type"), variable.name = "Variable", value.name = "Price")

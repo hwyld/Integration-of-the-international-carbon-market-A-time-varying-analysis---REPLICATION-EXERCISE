@@ -167,7 +167,7 @@ colnames(merged_data_EUR_denom) = colnames(merged_data)
 
 # rename DateTime to Date in merged_data
 colnames(merged_data)[1] <- "Date"
-
+colnames(merged_data_EUR_denom)[1] <- "Date"
 
 #-------------------------------------
 
