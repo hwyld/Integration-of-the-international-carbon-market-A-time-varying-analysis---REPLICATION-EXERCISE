@@ -29,8 +29,27 @@ vol_df <- read.csv("Research_Data_weekly_volatility.csv")
 return_zoo <- zoo(return_df[, -1], order.by = as.Date(return_df$Date))
 vol_zoo <- zoo(vol_df[, -1], order.by = as.Date(vol_df$Date))
 
+## Ensure there are no NAs or infinite values ##
+# If there are any NAs or infinite values, consider removing or imputing them
+return_zoo <- na.omit(return_zoo)  # Removes entire rows where any NA values are present
+
+# Alternatively, impute NAs - example using simple mean imputation (customize as needed)
+na_fill_values <- sapply(return_zoo, function(column) mean(column, na.rm = TRUE))
+return_zoo <- na.approx(return_zoo, rule = 2)  # Linear interpolation
+return_zoo <- na.fill(return_zoo, na_fill_values)  # Filling remaining NAs with column means
+
+summary(return_zoo)
+any(is.na(return_zoo))
+any(is.infinite(return_zoo))
+
 # Assuming 'return_df' is your dataframe with time series data
 data_matrix <- as.matrix(return_df)
+
+# Convert 'return_df' to a matrix excluding the Date column
+data_matrix <- as.matrix(return_df[,-1])  # Excludes the first column, which is 'Date'
+
+# Replace NAs with 0
+data_matrix[is.na(data_matrix)] <- 0
 
 head(data_matrix,5)
 #----------------------------------
@@ -49,6 +68,9 @@ result <- bvar.sv.tvp(y = data_matrix, p = 1, draws = 5000, burnin = 1000)
 # The draws argument specifies the number of draws for the MCMC estimation.
 # Adjust draws as needed. More draws typically lead to better results but require more computation time.
 
+# David Gabauer approach
+# https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
+
 dca = ConnectednessApproach(return_zoo, 
                             nlag=1, 
                             nfore=10,
@@ -60,14 +82,32 @@ dca = ConnectednessApproach(return_zoo,
 # Estimate the TVP-VAR model
 tvp_var_fit <- fit(tvp_var_model)
 
+## The TVP-VAR connectedness approach is implemented according to:
+##  Antonakakis, N., Chatziantoniou, I., & Gabauer, D. (2020). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. Journal of Risk and Financial Management, 13(4), 84.
+## Computing connectedness measures
+DCA = list()
+WINDOW.SIZE = c(50, 100, 200)
+for (i in 1:length(WINDOW.SIZE)) {
+  DCA[[i]] = suppressMessages(ConnectednessApproach(return_zoo, 
+                              nlag=1, 
+                              nfore=12,
+                              window.size=WINDOW.SIZE[i]))
+}
+
 # Summary of the estimation results
 summary(tvp_var_fit)
 
 # Plot the time-varying parameters
 plot(tvp_var_fit)
 
-# Additional diagnostic tests or analysis can be performed as needed
+# Plot the connectedness measures - Dynamic Total Connectedness
+PlotTCI(dca, ca=DCA)
 
+# Plot the connectedness measures - Dynamic Net Connectedness
+PlotNET(dca, ca=DCA)
+
+# Plot the connectedness measures - Net Pairwise Directional Connectedness
+PlotNPDC(dca, ca=DCA)
 
 # Install and load the bsts package
 install.packages("bsts")

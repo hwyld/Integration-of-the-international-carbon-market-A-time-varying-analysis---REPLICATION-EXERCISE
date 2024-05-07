@@ -115,7 +115,6 @@ weekly_index_returns <- cut(index(weekly_returns), breaks = "week", labels = FAL
 #---------------------------------------
 
 #### Annualised Weekly Volatilty ####
-## NOT COMPLETE YET ##
 # From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
 #---------------------------------------
 # Assuming cleaned_datasets_xts is already loaded and is an xts object
@@ -209,6 +208,9 @@ volatility_2 <- do.call(merge, volatility_list)
 # Convert to a data frame
 vol_2 <- data.frame(Date = index(volatility), Volatility = coredata(volatility))
 
+last(vol_2, 15)
+last(volatility, 15)
+
 ### SUBSET DATA ###
 # Trim the data to only include the dates from 2014-04-30 to 2021-12-01 (inclusive)
 # Wednesday 30th April 2014 to Wednesday 1st December 2021
@@ -221,6 +223,7 @@ last(Research_Data_weekly_volatility, 5)
 # Study has 397 observations
 nrow(Research_Data_weekly_returns)
 nrow(Research_Data_weekly_volatility)
+
 
 
 #### Descriptive statistics ####
@@ -408,10 +411,23 @@ ggsave("Weekly_Volatility_Plot.png", bg = "white")
 plotly::ggplotly(p)
 #---------------------------------------
 
-# Ensure the date reference is included in each dataset
-Research_Data_weekly_returns$Date <- index(Research_Data_weekly_returns)
-Research_Data_weekly_volatility$Date <- index(Research_Data_weekly_volatility)
+## Data Export ##
+#---------------------------------------
 
-# Export the weekly returns and volatility data to CSV files
-write.csv(Research_Data_weekly_returns, "Research_Data_weekly_returns.csv")
-write.csv(Research_Data_weekly_volatility, "Research_Data_weekly_volatility.csv")
+# Convert xts object to a data frame
+Research_Data_weekly_returns_df <- as.data.frame(Research_Data_weekly_returns)
+Research_Data_weekly_volatility_df <- as.data.frame(Research_Data_weekly_volatility)
+
+# Add the index (date) as a column in the data frame
+Research_Data_weekly_returns_df$Date <- index(Research_Data_weekly_returns)
+Research_Data_weekly_volatility_df$Date <- index(Research_Data_weekly_volatility)
+
+# Move the Date column to the first position
+Research_Data_weekly_returns_df <- Research_Data_weekly_returns_df[, c(ncol(Research_Data_weekly_returns_df), 1:(ncol(Research_Data_weekly_returns_df)-1))]
+Research_Data_weekly_volatility_df <- Research_Data_weekly_volatility_df[, c(ncol(Research_Data_weekly_volatility_df), 1:(ncol(Research_Data_weekly_volatility_df)-1))]
+
+# Export the data to CSV files
+write.csv(Research_Data_weekly_returns_df, "Research_Data_weekly_returns.csv", row.names = FALSE)
+write.csv(Research_Data_weekly_volatility_df, "Research_Data_weekly_volatility.csv", row.names = FALSE)
+
+#---------------------------------------
