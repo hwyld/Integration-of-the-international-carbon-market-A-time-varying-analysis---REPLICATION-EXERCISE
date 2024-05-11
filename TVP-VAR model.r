@@ -79,8 +79,6 @@ dca = ConnectednessApproach(return_zoo,
                             connectedness="Time",
                             VAR_config=list(TVPVAR=list(kappa1=0.99, kappa2=0.96, prior="BayesPrior")))
 
-# Estimate the TVP-VAR model
-tvp_var_fit <- fit(tvp_var_model)
 
 ## The TVP-VAR connectedness approach is implemented according to:
 ##  Antonakakis, N., Chatziantoniou, I., & Gabauer, D. (2020). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. Journal of Risk and Financial Management, 13(4), 84.
@@ -94,14 +92,21 @@ for (i in 1:length(WINDOW.SIZE)) {
                               window.size=WINDOW.SIZE[i]))
 }
 
-# Summary of the estimation results
-summary(tvp_var_fit)
-
-# Plot the time-varying parameters
-plot(tvp_var_fit)
-
 # Plot the connectedness measures - Dynamic Total Connectedness
-PlotTCI(dca, ca=DCA)
+# Revised call to PlotTCI without the 'title' parameter
+# Example function call without 'main' parameter
+PlotTCI(dca, 
+        ca = DCA, 
+        window.size = WINDOW.SIZE, 
+        plot.type = "l", 
+        legend.position = "topright", 
+        col = 1:3, 
+        lty = 1:3, 
+        lwd = 1, 
+        ylim = c(0, 50), 
+        legend.title = "Window Size", 
+        legend.text = c("50", "100", "200"), 
+        legend.text.col = 1:3)
 
 # Plot the connectedness measures - Dynamic Net Connectedness
 PlotNET(dca, ca=DCA)
