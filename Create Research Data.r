@@ -20,7 +20,8 @@ source("Packages.R")
 ####### Import and Format Data #######
 #---------------------------------------
 # Read the CSV file
-ICAP_df <- readr::read_csv("ICAP_EUR_denom_allowance_prices_trimmed.csv", locale = readr::locale(encoding = "UTF-8"))
+#ICAP_df <- readr::read_csv("ICAP_EUR_denom_allowance_prices_trimmed.csv", locale = readr::locale(encoding = "UTF-8"))
+ICAP_df <- readr::read_csv("ICAP_Refinitiv_EUR_denom_allowance_prices_trimmed.csv", locale = readr::locale(encoding = "UTF-8")) # using Refinitiv adjusted data
 Clearblue_df <- readr::read_csv("Clearblue_data.csv", locale = readr::locale(encoding = "UTF-8"))
 
 # Rename the DateTime column to Date
