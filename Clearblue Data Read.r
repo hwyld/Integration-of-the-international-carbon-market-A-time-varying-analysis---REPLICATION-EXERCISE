@@ -16,26 +16,6 @@ Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for
 setwd(Git)
 source("Packages.R")
 
-
-# Load necessary libraries
-#library(readxl)
-#library(dplyr)
-#library(readr)
-#library(tidyr)
-#library(ggplot2)
-#library(lubridate)
-#library(tibble)
-#library(data.table)
-#library(xts)
-#install.packages("htmltools")
-#library(htmltools)
-#install.packages("plotly")
-#library(plotly)
-#install.packages("radiant")
-#install.packages("httpgd")
-#library(httpgd)
-
-
 # Set the working directory
 setwd(Clearblue_Data)
 
@@ -110,19 +90,27 @@ colnames(merged_data)[4] <- "NZU - Cash Spot"
 colnames(merged_data)[5] <- "CCA - Front December - ICE"
 colnames(merged_data)[6] <- "CCA - Cash Spot"
 
-
+# Sort the data by DateTime
+merged_data <- merged_data[order(merged_data$DateTime), ]
+tail(merged_data)
+max(merged_data$DateTime)
 #-------------------------------------
 
 #### Data Cleaning ####
 setwd(Git)
 # Convert domestic currency to EUR for all series - use the Monthly Average Exchange Rates per the ICAP reporting
+# Convert domestic currency to EUR for all series - use the Daily Exchange Rates per Refinitiv
 #-------------------------------------
 
 # Read the historical exchange rates from file
-daily_EUR_rates <- read.csv("EUR_denom_exchange_rates.csv")
+#daily_EUR_rates <- read.csv("EUR_denom_exchange_rates.csv")
+daily_EUR_rates <- read.csv("Refinitiv_Exchange_Rates.csv")
+
+# Sort in ascending order by 'Date'
+daily_EUR_rates <- daily_EUR_rates[order(daily_EUR_rates$Date), ]
 
 # Convert the 'Date' column to Date class
-daily_EUR_rates$Date <- as.Date(daily_EUR_rates$Date)
+daily_EUR_rates$Date <- as.Date(daily_EUR_rates$Date, format = "%d/%m/%Y")
 
 # Create a copy of merged_data
 merged_data_EUR_denom <- merged_data
@@ -152,6 +140,9 @@ cols_to_keep <- c("Date",cols_to_keep)
 
 # Subset the dataframe to only include these columns
 merged_data_EUR_denom <- merged_data_EUR_denom[, cols_to_keep]
+
+# Sort the data by 'Date'
+merged_data_EUR_denom <- merged_data_EUR_denom[order(merged_data_EUR_denom$Date), ]
 
 # Verify the converted prices
 tail(merged_data)
