@@ -1,0 +1,21 @@
+Year,No.,Event,Date,Category,StartDate,EndDate
+2014,1,"G7 Energy Ministers Summit, Rome",2014.05.05,global politics,5/05/2014,5/05/2014
+2015,2,China coal power plant closure,2015.03.01–31,global politics,1/03/2015,31/03/2015
+2015,3,COP21- Paris agreement,2015.11.30–12.12,global politics,30/11/2015,12/12/2015
+2016,4,High-level UN debate on achieving the SDGs + Paris Agreement open for signature,2016.04.21–22,global politics,21/04/2016,22/04/2016
+2018,5,COP24,2018.12.2–14,global politics,2/12/2018,14/12/2018
+2019,6,COP25,2019-12.2-13,global politics,2/12/2019,13/12/2019
+2015,7,Korea built ETS,2015.01.01–02.01,carbon market,1/01/2015,1/02/2015
+2015,8,New Zealand delinked,2015.06.01–07.01,carbon market,1/06/2015,1/07/2015
+2019,9,Hubei carbon price spike,2019.05.20–06.03,carbon market,20/05/2019,3/06/2019
+2020,10,Swiss ETS linked to EU ETS,2020.01.01–02.01,carbon market,1/01/2020,1/02/2020
+2021,11,China national ETS operation,2021.07.21–08.21,carbon market,21/07/2021,21/08/2021
+2016,12,Big jump occurred in Global Land-Ocean Temperature Index,2016.02.01–28,weather,1/02/2016,28/02/2016
+2016,13,"Worst air pollution episode in China, schools and factories ordered shut, 200 flights cancelled",2016.12.01–30,weather,1/12/2016,30/12/2016
+2017,14,"Yangtze River flooding; Hurricanes Harvey, Irma, and Maria",2017.06.30–10.01,weather,30/06/2017,1/10/2017
+2018,15,Multiple deadly heat waves hit East Asia + Monsoon flood in India where Kerala state reported 500 deaths,2018.07.20–08.30,weather,20/07/2018,30/08/2018
+2014,16,Oil price crisis,2014.06–2015.01,energy,1/06/2014,1/01/2014
+2015,17,Stock market selloff (initially began in China),2015.06.12–08.26,finance,12/06/2015,26/08/2015
+2018,18,2018 cryptocurrency crash-Bitcoin ultimately fell by approximately 65 %,2018.01–02,finance,1/01/2018,1/02/2018
+2019,19,Covid hit China,2019.12.31,covid-19,31/12/2019,31/12/2019
+2021,20,Covid-19 pandemic started,2021.03–2022.12,covid-19,1/03/2021,1/12/2022

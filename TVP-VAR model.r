@@ -1,6 +1,6 @@
 ## ECOM90022 Research Methods, Semester 1, 2024
 ## Replication for Chenyan Lyu, Bert Scholtens, Integration of the international carbon market: A time-varying analysis, Renewable and Sustainable Energy Reviews, Volume 191,
-## TVP-VAR model estimation procedures in R
+## TVP-VAR model estimation procedures in R using the ConnectednessApproach package
 ## Author: Henry Wyld
 ## Date of creation: 2024-03-20
 
@@ -19,6 +19,7 @@ rm(list=ls())
 Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for-Carbon-Markets"
 setwd(Git)
 source("Packages.R")
+#----------------------------------
 
 ## Import data ##
 #----------------------------------
@@ -28,108 +29,219 @@ vol_df <- read.csv("Research_Data_weekly_volatility.csv")
 # Convert the data to zoo objects
 return_zoo <- zoo(return_df[, -1], order.by = as.Date(return_df$Date))
 vol_zoo <- zoo(vol_df[, -1], order.by = as.Date(vol_df$Date))
+#----------------------------------
 
-## Ensure there are no NAs or infinite values ##
-# If there are any NAs or infinite values, consider removing or imputing them
-return_zoo <- na.omit(return_zoo)  # Removes entire rows where any NA values are present
+## Data Cleaning ##
+#----------------------------------
+
+# If there are any NAs or infinite values,  removing or imputing them
+#return_zoo <- na.omit(return_zoo)  # Removes entire rows where any NA values are present
 
 # Alternatively, impute NAs - example using simple mean imputation (customize as needed)
 na_fill_values <- sapply(return_zoo, function(column) mean(column, na.rm = TRUE))
 return_zoo <- na.approx(return_zoo, rule = 2)  # Linear interpolation
 return_zoo <- na.fill(return_zoo, na_fill_values)  # Filling remaining NAs with column means
 
+# Alternatively, impute NAs - example using simple mean imputation (customize as needed)
+na_fill_values <- sapply(vol_zoo, function(column) mean(column, na.rm = TRUE))
+vol_zoo <- na.approx(vol_zoo, rule = 2)  # Linear interpolation
+vol_zoo <- na.fill(vol_zoo, na_fill_values)  # Filling remaining NAs with column means
+
+## Ensure there are no NAs or infinite values ##
 summary(return_zoo)
 any(is.na(return_zoo))
 any(is.infinite(return_zoo))
 
-# Assuming 'return_df' is your dataframe with time series data
-data_matrix <- as.matrix(return_df)
+## Ensure there are no NAs or infinite values ##
+summary(vol_zoo)
+any(is.na(vol_zoo))
+any(is.infinite(vol_zoo))
 
-# Convert 'return_df' to a matrix excluding the Date column
-data_matrix <- as.matrix(return_df[,-1])  # Excludes the first column, which is 'Date'
-
-# Replace NAs with 0
-data_matrix[is.na(data_matrix)] <- 0
-
-head(data_matrix,5)
 #----------------------------------
 
-## TVP-VAR model ##
+## Define Event Study Window ##
+#----------------------------------
+
+# Import data
+events_study_df <- read.csv("events_study_data.csv")
+
+# Convert the StartDate and EndDate columns to Date objects where format is dd/mm/yyyy
+events_study_df$StartDate <- as.Date(events_study_df$StartDate, format = "%d/%m/%Y")
+events_study_df$EndDate <- as.Date(events_study_df$EndDate, format = "%d/%m/%Y")
+
+# Optionally, write to a CSV file
+#write.csv(events_df, "events_study_data.csv", row.names = FALSE)
+#----------------------------------
+
+## TVP-VAR model - Returns ##
 #----------------------------------
 
 # Specify the lag order
-lag_order <- 1  # Change this as needed
+lag_order <- 1  # his analysis uses first-order VARs (p = 1) (selected by Schwarz information criterion), 
+H <- 10 # with 10-step-ahead forecasts (H = 10).
 
-# Fit the Bayesian VAR model with stochastic volatilities
-# Setting hyperparameters and specifying the number of lags
-result <- bvar.sv.tvp(y = data_matrix, p = 1, draws = 5000, burnin = 1000)
-
-# The type argument specifies the estimation method. "mcmc" uses Markov Chain Monte Carlo (MCMC) methods.
-# The draws argument specifies the number of draws for the MCMC estimation.
-# Adjust draws as needed. More draws typically lead to better results but require more computation time.
+# This study considers forgetting factor, kappa1=0.99 and decay factor kappa2=0.96 
+# follows Antonakakis et al. to keep the decay factors constant at fixed values.
+# See https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
+forgetting_factor <- 0.99
+decay_factor <- 0.96
 
 # David Gabauer approach
 # https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
+# https://cran.r-project.org/web/packages/ConnectednessApproach/ConnectednessApproach.pdf
 
 dca = ConnectednessApproach(return_zoo, 
-                            nlag=1, 
-                            nfore=10,
+                            nlag=lag_order, 
+                            nfore=H,
                             window.size=200,
                             model="TVP-VAR",
                             connectedness="Time",
-                            VAR_config=list(TVPVAR=list(kappa1=0.99, kappa2=0.96, prior="BayesPrior")))
-
+                            VAR_config=list(TVPVAR=list(kappa1=forgetting_factor, kappa2=decay_factor, prior="BayesPrior"))) # TVP-VAR model with forgetting factor and decay factor as specified
 
 ## The TVP-VAR connectedness approach is implemented according to:
 ##  Antonakakis, N., Chatziantoniou, I., & Gabauer, D. (2020). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. Journal of Risk and Financial Management, 13(4), 84.
+# See https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
+
 ## Computing connectedness measures
 DCA = list()
 WINDOW.SIZE = c(50, 100, 200)
 for (i in 1:length(WINDOW.SIZE)) {
-  DCA[[i]] = suppressMessages(ConnectednessApproach(return_zoo, 
-                              nlag=1, 
-                              nfore=12,
+  return[[i]] = suppressMessages(ConnectednessApproach(return_zoo, 
+                              nlag=lag_order, 
+                              nfore=H,
                               window.size=WINDOW.SIZE[i]))
 }
+#----------------------------------
 
-# Plot the connectedness measures - Dynamic Total Connectedness
-# Revised call to PlotTCI without the 'title' parameter
-# Example function call without 'main' parameter
+## Total Connectedness Index - TCI ##
+# The total connectedness index (TCI) illustrates the average impact a shock in one series has on all others.
+#----------------------------------
+# Start PDF device before creating the plot
+pdf("TCI_returns.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+# Increase the left margin further for the y-axis title
+par(mar=c(5, 5.5, 4, 2) + 0.1)  # Increased left margin
+
+# Plot TCI data with adjusted limits and margins
 PlotTCI(dca, 
-        ca = DCA, 
-        window.size = WINDOW.SIZE, 
-        plot.type = "l", 
-        legend.position = "topright", 
-        col = 1:3, 
-        lty = 1:3, 
-        lwd = 1, 
-        ylim = c(0, 50), 
-        legend.title = "Window Size", 
-        legend.text = c("50", "100", "200"), 
-        legend.text.col = 1:3)
+        ca = NULL,
+        ylim = c(0, 50))
 
-# Plot the connectedness measures - Dynamic Net Connectedness
-PlotNET(dca, ca=DCA)
+# Add titles and axis labels with adjusted positions
+title("Total Connectedness Index (TCI) - Returns", line = 2.5, cex.main = 1.5)
 
-# Plot the connectedness measures - Net Pairwise Directional Connectedness
-PlotNPDC(dca, ca=DCA)
+# Overlay the event study window
 
-# Install and load the bsts package
-install.packages("bsts")
-library(bsts)
 
-# Import your data
-VAR_df <- read.csv("EUR_denom_allowance_prices.csv")
+# Close the device and save the plot
+dev.off()
 
-# Convert your data to a time series object
-VAR_ts <- ts(VAR_df)
+#----------------------------------
 
-# Specify the model
-state.spec <- AddLocalLinearTrend(list(), VAR_ts)
-state.spec <- AddSeasonal(state.spec, VAR_ts, nseasons = 4)
+## Dynamic directional return and volatility spillovers TO four markets
+#----------------------------------
+# The total directional connectedness TO others represents the impact series i has on all other series
 
-# Estimate the model
-bsts.model <- bsts(VAR_ts, state.spec, niter = 1000, ping = 0, seed = 123)
+# Start PDF device before creating the plot
+pdf("TO_returns.pdf", width = 8, height = 6)  # Size in inches (default)
 
-# Summary of the estimation results
-summary(bsts.model)
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+par(mar=c(10, 4.5, 5, 2) + 0.1)  # Adjust these numbers as needed
+
+PlotTO(dca, ylim = c(0, 60))
+
+# Add titles and axis labels with adjusted positions
+title("'TO' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+
+# Overlay the event study window
+
+# Close the device and save the plot
+dev.off()
+#----------------------------------
+
+## Dynamic directional return and volatility spillovers TO four markets
+#----------------------------------
+# The total directional connectedness TO others represents the impact series i has on all other series
+
+# Start PDF device before creating the plot
+pdf("FROM_returns.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+par(mar=c(10, 4.5, 5, 2) + 0.1)  # Adjust these numbers as needed
+
+PlotFROM(dca, ylim = c(0, 60))
+
+# Add titles and axis labels with adjusted positions
+title("'FROM' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+
+# Overlay the event study window
+
+# Close the device and save the plot
+dev.off()
+#----------------------------------
+
+## Net Total Directional Connectedness - NET ##
+# The Net Total Directional Connectedness (NET) measures the difference between the 
+# total directional connectedness TO and FROM others results in the net total directional connectedness.
+#----------------------------------
+
+# Start PDF device before creating the plot
+pdf("NET_returns.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# # Plot the connectedness measures - Net Pairwise Total Connectedness
+PlotNET(dca, ylim = c(-50, 50))
+
+# Add titles and axis labels with adjusted positions
+title("Net Total Directional Connectedness (NET) - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+
+# Overlay the event study window
+
+# Close the device and save the plot
+dev.off()
+
+#----------------------------------
+
+## Forecast Error Variance Decomposition (FEVD) ##
+#----------------------------------
+# The average connectedness matrix of the system is calculated as the average of the connectedness matrices over the entire sample period.
+
+# Forecast Error Variance Decomposition (FEVD)
+FEVD_returns <- dca$TABLE
+
+# Put the table into a stargazer table
+# Create the stargazer table
+stargazer::stargazer(FEVD_returns, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Return system.", 
+                     out = "table_returns.txt")
+#----------------------------------
+
+## TVP-VAR model - Volatility ##
+#----------------------------------
+
+# David Gabauer approach
+# https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
+# https://cran.r-project.org/web/packages/ConnectednessApproach/ConnectednessApproach.pdf
+
+dca = ConnectednessApproach(vol_zoo, 
+                            nlag=lag_order, 
+                            nfore=H,
+                            window.size=200,
+                            model="TVP-VAR",
+                            connectedness="Time",
+                            VAR_config=list(TVPVAR=list(kappa1=forgetting_factor, kappa2=decay_factor, prior="BayesPrior"))) # TVP-VAR model with forgetting factor and decay factor as specified
+
+## The TVP-VAR connectedness approach is implemented according to:
+##  Antonakakis, N., Chatziantoniou, I., & Gabauer, D. (2020). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. Journal of Risk and Financial Management, 13(4), 84.
+# See https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
+
+## Forecast Error Variance Decomposition (FEVD) ##
+#----------------------------------
+# The average connectedness matrix of the system is calculated as the average of the connectedness matrices over the entire sample period.
+
+# Forecast Error Variance Decomposition (FEVD)
+FEVD_vol <- dca$TABLE
+
+# Put the table into a stargazer table
+# Create the stargazer table
+stargazer::stargazer(FEVD_vol, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Volatility system.", 
+                     out = "table_vol.txt")

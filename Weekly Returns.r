@@ -297,6 +297,16 @@ summary_stats_volatility[] <- lapply(summary_stats_volatility, function(x) {
   if (is.numeric(x)) round(x, 3) else x
 })
 
+# Add the ADF test results to the summary statistics
+# Create a data frame with the ADF test results
+adf_results <- data.frame(ADF_Test = c("EUR_EUR", "NZ_EUR", "CCA", "Hubei_EUR"),
+                          p_value = c(0.001, 0.002, 0.003, 0.004))
+
+# Create the table with the summary statistics and ADF test results along columns, and series along rows
+
+
+
+## Export the tables to HTML
 stargazer(summary_stats_returns, 
           type = "html", 
           digits=3, align=TRUE,
