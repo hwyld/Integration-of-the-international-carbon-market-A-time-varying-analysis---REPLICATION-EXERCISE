@@ -305,7 +305,6 @@ adf_results <- data.frame(ADF_Test = c("EUR_EUR", "NZ_EUR", "CCA", "Hubei_EUR"),
 # Create the table with the summary statistics and ADF test results along columns, and series along rows
 
 
-
 ## Export the tables to HTML
 stargazer(summary_stats_returns, 
           type = "html", 

@@ -103,19 +103,41 @@ dca = ConnectednessApproach(return_zoo,
 # See https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
 
 ## Computing connectedness measures
-DCA = list()
-WINDOW.SIZE = c(50, 100, 200)
-for (i in 1:length(WINDOW.SIZE)) {
-  return[[i]] = suppressMessages(ConnectednessApproach(return_zoo, 
-                              nlag=lag_order, 
-                              nfore=H,
-                              window.size=WINDOW.SIZE[i]))
-}
+#DCA = list()
+#WINDOW.SIZE = c(50, 100, 200)
+#for (i in 1:length(WINDOW.SIZE)) {
+#  return[[i]] = suppressMessages(ConnectednessApproach(return_zoo, 
+#                              nlag=lag_order, 
+#                              nfore=H,
+#                              window.size=WINDOW.SIZE[i]))
+#}
+#----------------------------------
+
+## EXTRACT DATA ##
+
+#----------------------------------
+# Extract the connectedness measures
+str(dca)
+TCI_return <- as.data.frame(dca$TCI)
+TCI_return$time <- as.Date(row.names(TCI_return))
+to_return <- as.data.frame(dca$TO)
+from_return  <- as.data.frame(dca$FROM)
+NET_return <- as.data.frame(dca$NET)
+
+print(names(TCI_return))
+head(TCI_return)
+# Assuming TCI_return is a data frame with a 'time' column for the x-axis and a 'TCI' column for the y-axis
+ggplot(TCI_return, aes(x = time, y = TCI)) + 
+  geom_line(color = "blue", size = 2) +  # 'size' is used instead of 'lwd'
+  labs(x = "Time", y = "TCI", title = "Total Connectedness Index (TCI) - Returns") +
+  theme_minimal()  # Optional: Adds a minimal theme
 #----------------------------------
 
 ## Total Connectedness Index - TCI ##
-# The total connectedness index (TCI) illustrates the average impact a shock in one series has on all others.
+
 #----------------------------------
+# The total connectedness index (TCI) illustrates the average impact a shock in one series has on all others.
+
 # Start PDF device before creating the plot
 pdf("TCI_returns.pdf", width = 8, height = 6)  # Size in inches (default)
 
@@ -129,17 +151,17 @@ PlotTCI(dca,
         ylim = c(0, 50))
 
 # Add titles and axis labels with adjusted positions
-title("Total Connectedness Index (TCI) - Returns", line = 2.5, cex.main = 1.5)
+#title("Total Connectedness Index (TCI) - Returns", line = 2.5, cex.main = 1.5)
 
 # Overlay the event study window
-
 
 # Close the device and save the plot
 dev.off()
 
 #----------------------------------
 
-## Dynamic directional return and volatility spillovers TO four markets
+## Dynamic directional spillovers TO markets ##
+
 #----------------------------------
 # The total directional connectedness TO others represents the impact series i has on all other series
 
@@ -152,7 +174,7 @@ par(mar=c(10, 4.5, 5, 2) + 0.1)  # Adjust these numbers as needed
 PlotTO(dca, ylim = c(0, 60))
 
 # Add titles and axis labels with adjusted positions
-title("'TO' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+#title("'TO' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
 
 # Overlay the event study window
 
@@ -160,7 +182,7 @@ title("'TO' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", f
 dev.off()
 #----------------------------------
 
-## Dynamic directional return and volatility spillovers TO four markets
+## Dynamic directional spillovers FROM markets ##
 #----------------------------------
 # The total directional connectedness TO others represents the impact series i has on all other series
 
@@ -170,10 +192,10 @@ pdf("FROM_returns.pdf", width = 8, height = 6)  # Size in inches (default)
 # Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
 par(mar=c(10, 4.5, 5, 2) + 0.1)  # Adjust these numbers as needed
 
-PlotFROM(dca, ylim = c(0, 60))
+PlotFROM(dca, ylim = c(0, 60))  # Adjust these numbers as needed
 
 # Add titles and axis labels with adjusted positions
-title("'FROM' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+#title("'FROM' Others - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
 
 # Overlay the event study window
 
@@ -182,22 +204,22 @@ dev.off()
 #----------------------------------
 
 ## Net Total Directional Connectedness - NET ##
-# The Net Total Directional Connectedness (NET) measures the difference between the 
-# total directional connectedness TO and FROM others results in the net total directional connectedness.
 #----------------------------------
 
-# Start PDF device before creating the plot
-pdf("NET_returns.pdf", width = 8, height = 6)  # Size in inches (default)
+# The Net Total Directional Connectedness (NET) measures the difference between the 
+# total directional connectedness TO and FROM others results in the net total directional connectedness.
 
-# # Plot the connectedness measures - Net Pairwise Total Connectedness
-PlotNET(dca, ylim = c(-50, 50))
+# Start PDF device with adjusted height for more header space
+pdf("NET_returns.pdf", width = 8, height = 6)
+
+# Plot the connectedness measures - Net Pairwise Total Connectedness
+# Adjusting margins and possibly outer margins within the function call
+PlotNET(dca, ylim = c(-50, 50), mar = c(5, 4, 6, 2), oma = c(0, 0, 4, 0))
 
 # Add titles and axis labels with adjusted positions
-title("Net Total Directional Connectedness (NET) - Returns", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+#title("Net Total Directional Connectedness (NET) - Returns", line = 1, cex.main = 1.5, col.main = "black", font.main = 2)
 
-# Overlay the event study window
-
-# Close the device and save the plot
+# Close the PDF device
 dev.off()
 
 #----------------------------------
@@ -213,6 +235,7 @@ FEVD_returns <- dca$TABLE
 # Create the stargazer table
 stargazer::stargazer(FEVD_returns, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Return system.", 
                      out = "table_returns.txt")
+
 #----------------------------------
 
 ## TVP-VAR model - Volatility ##
@@ -234,6 +257,108 @@ dca = ConnectednessApproach(vol_zoo,
 ##  Antonakakis, N., Chatziantoniou, I., & Gabauer, D. (2020). Refined measures of dynamic connectedness based on time-varying parameter vector autoregressions. Journal of Risk and Financial Management, 13(4), 84.
 # See https://gabauerdavid.github.io/ConnectednessApproach/2020AntonakakisChatziantoniouGabauer
 
+
+## EXTRACT DATA ##
+
+#----------------------------------
+# Extract the connectedness measures
+str(dca)
+TCI_vol <- as.data.frame(dca$TCI)
+to_vol <- as.data.frame(dca$TO)
+from_vol  <- as.data.frame(dca$FROM)
+NET_vol <- as.data.frame(dca$NET)
+
+## Total Connectedness Index - TCI ##
+
+#----------------------------------
+# The total connectedness index (TCI) illustrates the average impact a shock in one series has on all others.
+
+# Start PDF device before creating the plot
+pdf("TCI_vol.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+# Increase the left margin further for the y-axis title
+par(mar=c(5, 5.5, 4, 2) + 0.1)  # Increased left margin
+
+# Plot TCI data with adjusted limits and margins
+PlotTCI(dca, 
+        ca = NULL,
+        ylim = c(0, 50))
+
+# Add titles and axis labels with adjusted positions
+#title("Total Connectedness Index (TCI) - vol", line = 2.5, cex.main = 1.5)
+
+# Overlay the event study window
+
+# Close the device and save the plot
+dev.off()
+
+#----------------------------------
+
+## Dynamic directional spillovers TO markets ##
+
+#----------------------------------
+# The total directional connectedness TO others represents the impact series i has on all other series
+
+# Start PDF device before creating the plot
+pdf("TO_vol.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+par(mar=c(10, 4.5, 5, 2) + 0.1)  # Adjust these numbers as needed
+
+PlotTO(dca, ylim = c(0, 60))
+
+# Add titles and axis labels with adjusted positions
+#title("'TO' Others - vol", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+
+# Overlay the event study window
+
+# Close the device and save the plot
+dev.off()
+#----------------------------------
+
+## Dynamic directional spillovers FROM markets ##
+#----------------------------------
+# The total directional connectedness TO others represents the impact series i has on all other series
+
+# Start PDF device before creating the plot
+pdf("FROM_vol.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+par(mar=c(10, 4.5, 5, 2) + 0.1)  # Adjust these numbers as needed
+
+PlotFROM(dca, ylim = c(0, 60))  # Adjust these numbers as needed
+
+# Add titles and axis labels with adjusted positions
+#title("'FROM' Others - vol", line = 2.5, cex.main = 1.5, col.main = "black", font.main = 2)
+
+# Overlay the event study window
+
+# Close the device and save the plot
+dev.off()
+#----------------------------------
+
+## Net Total Directional Connectedness - NET ##
+#----------------------------------
+
+# The Net Total Directional Connectedness (NET) measures the difference between the 
+# total directional connectedness TO and FROM others results in the net total directional connectedness.
+
+# Start PDF device with adjusted height for more header space
+pdf("NET_vol.pdf", width = 8, height = 6)
+
+# Plot the connectedness measures - Net Pairwise Total Connectedness
+# Adjusting margins and possibly outer margins within the function call
+PlotNET(dca, ylim = c(-50, 50), mar = c(5, 4, 6, 2), oma = c(0, 0, 4, 0))
+
+# Add titles and axis labels with adjusted positions
+#title("Net Total Directional Connectedness (NET) - vol", line = 1, cex.main = 1.5, col.main = "black", font.main = 2)
+
+# Close the PDF device
+dev.off()
+
+#----------------------------------
+
 ## Forecast Error Variance Decomposition (FEVD) ##
 #----------------------------------
 # The average connectedness matrix of the system is calculated as the average of the connectedness matrices over the entire sample period.
@@ -245,3 +370,4 @@ FEVD_vol <- dca$TABLE
 # Create the stargazer table
 stargazer::stargazer(FEVD_vol, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Volatility system.", 
                      out = "table_vol.txt")
+#----------------------------------
