@@ -371,3 +371,25 @@ FEVD_vol <- dca$TABLE
 stargazer::stargazer(FEVD_vol, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Volatility system.", 
                      out = "table_vol.txt")
 #----------------------------------
+
+
+# Plot TCI data with event study window
+#----------------------------------
+
+# Start PDF device before creating the plot
+pdf("TCI_returns_event_study.pdf", width = 8, height = 6)  # Size in inches (default)
+
+# Set larger margins (bottom, left, top, right) to avoid clipping of titles/labels
+# Increase the left margin further for the y-axis title
+par(mar=c(5, 5.5, 4, 2) + 0.1)  # Increased left margin
+
+# Plot TCI data with adjusted limits and margins
+PlotTCI(dca, 
+        ca = events_study_df,
+        ylim = c(0, 50))
+
+# Add titles and axis labels with adjusted positions
+#title("Total Connectedness Index (TCI) - Returns", line = 2.5, cex.main = 1.5)
+
+# Close the device and save the plot
+dev.off()

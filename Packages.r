@@ -53,7 +53,8 @@ load_packages <- function(update = FALSE) {
     tseries = "time-series analysis in R",
     TTR = "technical trading rules in R",
     bvarsv = "Bayesian vector autoregression models in R",
-    ConnectednessApproach = "connectedness measures in R"
+    ConnectednessApproach = "connectedness measures in R",
+    purrr = "functional programming in R"
   )
 
   # Update all packages if specified
