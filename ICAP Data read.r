@@ -16,23 +16,6 @@ Git <- "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for
 setwd(Git)
 source("Packages.R")
 
-# Install the latest version of htmltools
-#remove.packages("htmltools")
-#install.packages("htmltools")
-#packageVersion("htmltools")
-#library(plotly)
-
-# Import your data
-#library(readxl)
-#library(dplyr)
-#library(readr)
-#library(tidyr)
-#library(ggplot2)
-#library(lubridate)
-#library(tibble)
-#library(data.table)
-#library(xts)
-
 #----------------------------------
 
 # Set the working directory
@@ -117,11 +100,8 @@ for (i in indices) {
   EUR_denom_allowance_prices <- cbind(EUR_denom_allowance_prices, df[, i])
 }
 
-
-
 # Remove the first 2 rows
 EUR_denom_allowance_prices <- EUR_denom_allowance_prices[-c(1:2), ]
-
 
 # Rename the column names to that of the first row
 colnames(EUR_denom_allowance_prices) <- EUR_denom_allowance_prices[1, ]
@@ -145,7 +125,6 @@ for (i in 2:ncol(EUR_denom_allowance_prices)) {
 head(EUR_denom_allowance_prices,5)
 
 #--------------------------------------------------------
-
 
 # Export as a CSV file
 write.csv(allowance_price, "allowance_price.csv")
@@ -185,9 +164,7 @@ head(Research_Data_EUR_denom_allowance_prices_trimmed,5)
 #Research_Data_allowance_price_trimmed <- Research_Data_allowance_price_trimmed[-3]
 #Research_Data_EUR_denom_allowance_prices_trimmed <- Research_Data_EUR_denom_allowance_prices_trimmed[-3]
 
-
 #----------------------
-
 
 ####### Data Cleaning ########
 

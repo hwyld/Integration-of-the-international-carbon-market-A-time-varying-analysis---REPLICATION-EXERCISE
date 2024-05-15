@@ -96,4 +96,3 @@ set_working_directories <- function() {
 # Call the functions to load packages and set directories when this script runs
 load_packages(update = FALSE)
 set_working_directories()
-
