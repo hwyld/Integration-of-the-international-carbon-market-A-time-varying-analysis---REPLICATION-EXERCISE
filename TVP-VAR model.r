@@ -231,10 +231,13 @@ dev.off()
 # Forecast Error Variance Decomposition (FEVD)
 FEVD_returns <- dca$TABLE
 
+# Remove the rows named "Inc.Own" and "NPT"
+FEVD_returns <- FEVD_returns[!(rownames(FEVD_returns) %in% c("Inc.Own", "NPT")), ]
+
 # Put the table into a stargazer table
-# Create the stargazer table
-stargazer::stargazer(FEVD_returns, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Return system.", 
-                     out = "table_returns.txt")
+# Create the stargazer table and export to HTML
+stargazer::stargazer(FEVD_returns, type = "html", summary = FALSE, title = "Table 3. Average connectedness matrix of the Return system.", 
+                     out = "connectedness_returns.html")
 
 #----------------------------------
 

@@ -80,7 +80,7 @@ calculate_weekly_returns <- function(data) {
   # Ensure that the 'data' is an xts object and has a proper Date index
   if (!inherits(data, "xts")) stop("Data must be an xts object")
 
-  # Find indexes for all Fridays within the data range
+ # Find indexes for all Fridays within the data range
   fridays <- which(format(index(data), "%A") == "Friday")
 
   # Make sure it starts and ends with Fridays (if not, adjust accordingly)
@@ -111,10 +111,9 @@ print(head(weekly_returns))
 
 # Save weekly index for later use
 weekly_index_returns <- cut(index(weekly_returns), breaks = "week", labels = FALSE)
-
 #---------------------------------------
 
-#### Annualised Weekly Volatilty ####
+#### Annualised Weekly Volatilty #### 
 # From Paper "The main measure is the standard deviation of weekly return over the five-day interval during each week"
 #---------------------------------------
 # Assuming cleaned_datasets_xts is already loaded and is an xts object
@@ -193,52 +192,77 @@ volatility <- xts(volatility, order.by = first_day_of_week)
 
 #---------------------------------------
 
-# Simplified weekly volatility calculation - DOUBLE CHECKED - CAN REMOVE OR USE
+# Simplified weekly volatility calculation
 #---------------------------------------
 # Calculate the standard deviation of weekly returns over the five-day interval during each week
 
 # Calculate standard deviation for each column individually using the TTR package
-volatility_list <- lapply(weekly_returns, function(column_data) {
-  runSD(x = column_data, n = 5, sample = TRUE, cumulative = FALSE)
-})
+#volatility_list <- lapply(weekly_returns, function(column_data) {
+#  runSD(x = column_data, n = 5, sample = TRUE, cumulative = FALSE)
+#})
 
 # Convert the list back to an xts object if you want to keep all results together
-volatility_2 <- do.call(merge, volatility_list)
+#volatility_2 <- do.call(merge, volatility_list)
 
 # Convert to a data frame
-vol_2 <- data.frame(Date = index(volatility), Volatility = coredata(volatility))
+#vol_2 <- data.frame(Date = index(volatility), Volatility = coredata(volatility))
 
-last(vol_2, 15)
-last(volatility, 15)
+#last(vol_2, 15)
+#last(volatility, 15)
+#---------------------------------------
 
 ### SUBSET DATA ###
+#---------------------------------------
 # Trim the data to only include the dates from 2014-04-30 to 2021-12-01 (inclusive)
 # Wednesday 30th April 2014 to Wednesday 1st December 2021
-Research_Data_weekly_returns <- weekly_returns["2014-04-30/2021-12-01"]
-Research_Data_weekly_volatility <- volatility["2014-04-30/2021-12-01"]
+Research_Data_weekly_returns <- weekly_returns["2014-04-30/2021-12-08"]
+Research_Data_weekly_volatility <- volatility["2014-04-30/2021-12-08"]
 
 last(Research_Data_weekly_returns, 5)
 last(Research_Data_weekly_volatility, 5)
+
+# Check for any missing values
+sum(is.na(Research_Data_weekly_returns))
+sum(is.na(Research_Data_weekly_volatility))
+
+# Fill missing values with NA using sample mean (2014-05-02 to 2015-01-09, 37 missing values)
+Research_Data_weekly_returns <- apply(Research_Data_weekly_returns, 2, function(x) {
+  na_index <- is.na(x)
+  x[na_index] <- mean(x, na.rm = TRUE)
+  x
+})
+
+Research_Data_weekly_volatility <- apply(Research_Data_weekly_volatility, 2, function(x) {
+  na_index <- is.na(x)
+  x[na_index] <- mean(x, na.rm = TRUE)
+  x
+})
 
 # Study has 397 observations
 nrow(Research_Data_weekly_returns)
 nrow(Research_Data_weekly_volatility)
 
+# Change Column Names to match the paper; EU ETS, NZ ETS, CA CaT, HB ETS
+colnames(Research_Data_weekly_returns) <- c("EU ETS", "NZ ETS", "CA CaT", "HB ETS")
 
+# Rename the Column Names from Research_Data_weekly_volatility to match Research_Data_weekly_returns
+colnames(Research_Data_weekly_volatility) <- colnames(Research_Data_weekly_returns)
+
+# Convert both datasets as xts objects using the index from the row names
+Research_Data_weekly_returns <- xts(Research_Data_weekly_returns, order.by = as.Date(rownames(Research_Data_weekly_returns)))
+Research_Data_weekly_volatility <- xts(Research_Data_weekly_volatility, order.by = as.Date(rownames(Research_Data_weekly_volatility)))
+
+#---------------------------------------
 
 #### Descriptive statistics ####
 ## From Paper: "The descriptive statistics of the weekly returns and weekly volatility are presented in Table 2 in Panel A and B."
-
-####### Summary Statistics #######
 #---------------------------------------
-# Function to find start and end dates excluding NA
+# Function to get the date range of valid values using the xts object's index
 get_valid_dates <- function(series) {
-  valid_dates <- index(series[!is.na(series)])  # Get dates for non-NA values
-  start_date <- format(min(valid_dates), "%Y-%m-%d")
-  end_date <- format(max(valid_dates), "%Y-%m-%d")
-  return(c(Start = start_date, End = end_date))
+  start_date <- index(series)[1]
+  end_date <- index(series)[length(index(series))]
+  return(c(Start_Date = start_date, End_Date = end_date))
 }
-
 # Apply the function to each column
 valid_date_returns <- sapply(Research_Data_weekly_returns, get_valid_dates)
 valid_date_volatility <- sapply(Research_Data_weekly_volatility, get_valid_dates)
@@ -248,9 +272,7 @@ print(str(Research_Data_weekly_returns))
 summary(Research_Data_weekly_returns)
 
 # count the number of NA values in the weekly returns
-sapply(Research_Data_weekly_returns, function(x) sum(is.na(x)))
-
-library(psych)
+#sapply(Research_Data_weekly_returns, function(x) sum(is.na(x)))
 
 # Safely apply describe to ensure it doesn't fail silently
 safe_describe <- function(x) {
@@ -265,27 +287,24 @@ safe_describe <- function(x) {
 summary_stats_returns <- sapply(Research_Data_weekly_returns, safe_describe)
 summary_stats_volatility <- sapply(Research_Data_weekly_volatility, safe_describe)
 
-## Display the Summary Statistics
-# Load knitr for table output
-if (!require("knitr")) install.packages("knitr", dependencies=TRUE)
-library(knitr)
+## ADF test ##
+# Function to perform ADF test and extract the test statistic
+perform_adf_test <- function(series) {
+  test_result <- ur.df(series, type = "drift", selectlags = "BIC")
+  return(test_result@teststat[1]) # Extract the test statistic
+}
 
-# Display tables
-sapply(summary_stats_returns, knitr::kable)
-sapply(summary_stats_volatility, knitr::kable)
+# Apply ADF test to each column in the returns and volatility datasets
+adf_results_returns <- sapply(Research_Data_weekly_returns, perform_adf_test)
+adf_results_volatility <- sapply(Research_Data_weekly_volatility, perform_adf_test)
 
-# Creating and printing tables for statistics
-kable(summary_stats_returns, caption = "Summary Statistics for Returns")
-kable(summary_stats_volatility, caption = "Summary Statistics for Volatility")
+# Adding ADF test results to summary statistics
+summary_stats_returns <- rbind(summary_stats_returns, ADF = adf_results_returns)
+summary_stats_volatility <- rbind(summary_stats_volatility, ADF = adf_results_volatility)
 
-# Creating and printing tables for dates
-kable(valid_date_returns, caption = "Start and End Dates for Returns")
-kable(valid_date_volatility, caption = "Start and End Dates for Volatility")
-
-# Export the Tables with stargazer
-
-# Export and save the tables to HTML
-length(summary_stats_returns)
+# Transpose to match required format
+summary_stats_returns <- t(summary_stats_returns)
+summary_stats_volatility <- t(summary_stats_volatility)
 
 # Round to 3 decimal places
 # Rounding only numeric columns in a data frame
@@ -297,13 +316,44 @@ summary_stats_volatility[] <- lapply(summary_stats_volatility, function(x) {
   if (is.numeric(x)) round(x, 3) else x
 })
 
-# Add the ADF test results to the summary statistics
-# Create a data frame with the ADF test results
-adf_results <- data.frame(ADF_Test = c("EUR_EUR", "NZ_EUR", "CCA", "Hubei_EUR"),
-                          p_value = c(0.001, 0.002, 0.003, 0.004))
+# Trim each data frame to only include the relevant columns; Mean, Min, Max, St Dev, Skew, Kurt, ADF Test Statistic
+summary_stats_returns <- summary_stats_returns[, c("mean", "min", "max", "sd", "skew", "kurtosis", "ADF")]
+summary_stats_volatility <- summary_stats_volatility[, c("mean", "min", "max", "sd", "skew", "kurtosis", "ADF")]
 
-# Create the table with the summary statistics and ADF test results along columns, and series along rows
+# Create data frames for returns and volatility series
+source_article_returns <- data.frame(
+  Series = c("EU ETS", "NZ ETS", "CA CaT", "HB ETS"),
+  Mean = c(0.007, 0.008, 0.003, 0.001),
+  Min = c(-0.312, -0.112, -0.326, -0.437),
+  Max = c(0.243, 0.232, 0.202, 0.342),
+  St_dev = c(0.060, 0.036, 0.028, 0.063),
+  Skew = c(-0.312, 1.944, -3.064, -0.764),
+  Kurtosis = c(5.996, 12.041, 59.992, 17.080),
+  ADF = c(-14.37, -10.27, -12.74, -18.74)
+)
 
+source_article_volatility <- data.frame(
+  Series = c("EU ETS", "NZ ETS", "CA CaT", "HB ETS"),
+  Mean = c(16.734, 7.167, 4.842, 15.604),
+  Min = c(1.368, 0.690, 0.819, 0.002),
+  Max = c(78.881, 75.503, 57.247, 56.364),
+  St_dev = c(10.081, 7.474, 5.266, 12.531),
+  Skew = c(1.782, 4.350, 5.718, 1.098),
+  Kurtosis = c(8.622, 29.793, 46.145, 3.557),
+  ADF = c(-4.07, -5.74, -4.09, -5.45)
+)
+
+# Add the means from the source article data to the summary statistics
+summary_stats_returns$Mean_Source <- source_article_returns$Mean
+summary_stats_volatility$Mean_Source <- source_article_volatility$Mean
+
+# Start and End Dates for Returns and Volatility using the indexes from the xts objects
+valid_date_returns <- data.frame(Start_Date = index(Research_Data_weekly_returns)[1], End_Date = index(Research_Data_weekly_returns)[length(index(Research_Data_weekly_returns))])
+valid_date_volatility <- data.frame(Start_Date = index(Research_Data_weekly_volatility)[1], End_Date = index(Research_Data_weekly_volatility)[length(index(Research_Data_weekly_volatility))])
+
+# Add Source description
+source_description <- "Source: Authors' calculations based on data from ICAP for carbon prices series from EU ETS, NZ ETS, and HB ETS, and Clearblue Markets and Refinitiv for CA CaT. Data sampled from Friday May 2, 2014, to Friday December 3, 2021 (inclusive of source data accounting for Friday to Friday returns.). The ADF test is the Augmented Dickey-Fuller test for unit roots in the time series data with lag length determined by the BIC criterion. The p-value is the probability of observing the test statistic if the null hypothesis of a unit root is true. The null hypothesis is rejected if the p-value is less than 0.01."
+#Source: Own elaboration based on data from Bloomberg, Reuters, and Wind Database. Note: Sample including carbon prices series from EU ETS, NZ ETS, CA CaT, and HB ETS from April 30, 2014, to December 1, 2021. The hypothesis of the Augmented Dicky Fuller (ADF) test is H0: non-stationary against H1: stationary. The lag length is determined by BIC criterion. *** denotes significance at 1 % level
 
 ## Export the tables to HTML
 stargazer(summary_stats_returns, 
@@ -311,17 +361,20 @@ stargazer(summary_stats_returns,
           digits=3, align=TRUE,
           intercept.bottom=FALSE,
           title = "Summary Statistics for Returns",
-          out= "Summary Statistics for Returns.html")
+          out= "Summary Statistics for Returns.html",
+          notes = source_description
+        )
 
 stargazer(summary_stats_volatility, 
           type = "html", 
           digits=3, align=TRUE,
           intercept.bottom=FALSE,
           title = "Summary Statistics for Volatility",
-          out= "Summary Statistics for Volatility.html")
+          out= "Summary Statistics for Volatility.html",
+          notes = source_description)
 
-stargazer(valid_date_returns, type = "html", title = "Start and End Dates for Returns",out= "Dates Returns.html")
-stargazer(valid_date_volatility, type = "html", title = "Start and End Dates for Clearblue Volatility",out= "Dates Returns.html")
+
+#---------------------------------------
 
 ### Plot the data ###
 #---------------------------------------
