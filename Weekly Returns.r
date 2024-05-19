@@ -320,15 +320,27 @@ summary_stats_volatility[] <- lapply(summary_stats_volatility, function(x) {
 summary_stats_returns <- summary_stats_returns[, c("mean", "min", "max", "sd", "skew", "kurtosis", "ADF")]
 summary_stats_volatility <- summary_stats_volatility[, c("mean", "min", "max", "sd", "skew", "kurtosis", "ADF")]
 
+# Rename the columns to match the paper
+colnames(summary_stats_returns) <- c("Mean", "Min", "Max", "St.dev.", "Skew.", "Kurt.", "ADF")
+colnames(summary_stats_volatility) <- c("Mean", "Min", "Max", "St.dev.", "Skew.", "Kurt.", "ADF")
+
+# Save as data frames
+summary_stats_returns <- as.data.frame(summary_stats_returns)
+summary_stats_volatility <- as.data.frame(summary_stats_volatility)
+
+# Add a Series column to match with the source article data
+summary_stats_returns$Series <- rownames(summary_stats_returns)
+summary_stats_volatility$Series <- rownames(summary_stats_volatility)
+
 # Create data frames for returns and volatility series
 source_article_returns <- data.frame(
   Series = c("EU ETS", "NZ ETS", "CA CaT", "HB ETS"),
   Mean = c(0.007, 0.008, 0.003, 0.001),
   Min = c(-0.312, -0.112, -0.326, -0.437),
   Max = c(0.243, 0.232, 0.202, 0.342),
-  St_dev = c(0.060, 0.036, 0.028, 0.063),
-  Skew = c(-0.312, 1.944, -3.064, -0.764),
-  Kurtosis = c(5.996, 12.041, 59.992, 17.080),
+  St.dev. = c(0.060, 0.036, 0.028, 0.063),
+  Skew. = c(-0.312, 1.944, -3.064, -0.764),
+  Kurt. = c(5.996, 12.041, 59.992, 17.080),
   ADF = c(-14.37, -10.27, -12.74, -18.74)
 )
 
@@ -337,23 +349,44 @@ source_article_volatility <- data.frame(
   Mean = c(16.734, 7.167, 4.842, 15.604),
   Min = c(1.368, 0.690, 0.819, 0.002),
   Max = c(78.881, 75.503, 57.247, 56.364),
-  St_dev = c(10.081, 7.474, 5.266, 12.531),
-  Skew = c(1.782, 4.350, 5.718, 1.098),
-  Kurtosis = c(8.622, 29.793, 46.145, 3.557),
+  St.dev. = c(10.081, 7.474, 5.266, 12.531),
+  Skew. = c(1.782, 4.350, 5.718, 1.098),
+  Kurt. = c(8.622, 29.793, 46.145, 3.557),
   ADF = c(-4.07, -5.74, -4.09, -5.45)
 )
 
-# Add the means from the source article data to the summary statistics
-summary_stats_returns$Mean_Source <- source_article_returns$Mean
-summary_stats_volatility$Mean_Source <- source_article_volatility$Mean
+# Combine the summary statistics with the source article data
+combine_summary_stats <- function(summary_stats, source_article) {
+  # Join the data frames by Series column
+  combined_data <- merge(summary_stats, source_article, by = "Series", suffixes = c("_Summary", "_Source"))
+  return(combined_data)
+}
+
+# Combine returns and volatility data
+combined_returns <- combine_summary_stats(summary_stats_returns, source_article_returns)
+combined_volatility <- combine_summary_stats(summary_stats_volatility, source_article_volatility)
+
+# Create a new data frame that removes all series except
+comparison_means_returns <- combined_returns[, c("Series", "Mean_Summary", "Mean_Source")]
+comparison_means_volatility <- combined_volatility[, c("Series", "Mean_Summary", "Mean_Source")]
 
 # Start and End Dates for Returns and Volatility using the indexes from the xts objects
-valid_date_returns <- data.frame(Start_Date = index(Research_Data_weekly_returns)[1], End_Date = index(Research_Data_weekly_returns)[length(index(Research_Data_weekly_returns))])
-valid_date_volatility <- data.frame(Start_Date = index(Research_Data_weekly_volatility)[1], End_Date = index(Research_Data_weekly_volatility)[length(index(Research_Data_weekly_volatility))])
+#valid_date_returns <- data.frame(Start_Date = index(Research_Data_weekly_returns)[1], End_Date = index(Research_Data_weekly_returns)[length(index(Research_Data_weekly_returns))])
+#valid_date_volatility <- data.frame(Start_Date = index(Research_Data_weekly_volatility)[1], End_Date = index(Research_Data_weekly_volatility)[length(index(Research_Data_weekly_volatility))])
+
+# Drop the Series column from the summary statistics dataframes
+summary_stats_returns <- summary_stats_returns[, -8]
+summary_stats_volatility <- summary_stats_volatility[, -8]
 
 # Add Source description
 source_description <- "Source: Authors' calculations based on data from ICAP for carbon prices series from EU ETS, NZ ETS, and HB ETS, and Clearblue Markets and Refinitiv for CA CaT. Data sampled from Friday May 2, 2014, to Friday December 3, 2021 (inclusive of source data accounting for Friday to Friday returns.). The ADF test is the Augmented Dickey-Fuller test for unit roots in the time series data with lag length determined by the BIC criterion. The p-value is the probability of observing the test statistic if the null hypothesis of a unit root is true. The null hypothesis is rejected if the p-value is less than 0.01."
 #Source: Own elaboration based on data from Bloomberg, Reuters, and Wind Database. Note: Sample including carbon prices series from EU ETS, NZ ETS, CA CaT, and HB ETS from April 30, 2014, to December 1, 2021. The hypothesis of the Augmented Dicky Fuller (ADF) test is H0: non-stationary against H1: stationary. The lag length is determined by BIC criterion. *** denotes significance at 1 % level
+
+# transpose the data frames
+summary_stats_returns <- t(t(summary_stats_returns))
+summary_stats_volatility <- t(t(summary_stats_volatility))
+comparison_means_returns <- t(t(comparison_means_returns))
+comparison_means_volatility <- t(t(comparison_means_volatility))
 
 ## Export the tables to HTML
 stargazer(summary_stats_returns, 
@@ -373,6 +406,26 @@ stargazer(summary_stats_volatility,
           out= "Summary Statistics for Volatility.html",
           notes = source_description)
 
+# Add the source description to the comparison tables
+source_description_Comparison <- "Note: Summary represents data from this replication exercise. Source represents data taken from Lyu and Scholtens (2022)."
+
+stargazer(comparison_means_returns, 
+          type = "html", 
+          digits=3, align=TRUE,
+          intercept.bottom=FALSE,
+          title = "Comparison of Means for Returns",
+          out= "Comparison of Means for Returns.html",
+          notes = source_description_Comparison
+        )
+
+stargazer(comparison_means_volatility, 
+          type = "html", 
+          digits=3, align=TRUE,
+          intercept.bottom=FALSE,
+          title = "Comparison of Means for Volatility",
+          out= "Comparison of Means for Volatility.html",
+          notes = source_description_Comparison
+        )
 
 #---------------------------------------
 
@@ -381,6 +434,9 @@ stargazer(summary_stats_volatility,
 # Plot the weekly returns as 4 separate charts for each series but merge them into one file
 # Convert xts objects to data frames, capturing Date indices
 Research_Data_continuously_compounded_weekly_returns <- data.frame(Date = index(Research_Data_weekly_returns), coredata(Research_Data_weekly_returns))
+
+# Match Column Names to the paper
+colnames(Research_Data_continuously_compounded_weekly_returns) <- c('Date',colnames(Research_Data_weekly_returns))
 
 # Melt the data for plotting (if using ggplot2 and the data is wide)
 Research_Data_continuously_compounded_weekly_returns_long <- melt(Research_Data_continuously_compounded_weekly_returns, id.vars = "Date", variable.name = "Series", value.name = "Weekly_Return")
@@ -391,57 +447,41 @@ a <- ggplot(Research_Data_continuously_compounded_weekly_returns_long, aes(x = D
   geom_line(aes(y = Weekly_Return, color = Series)) +
   labs(title = "Weekly Returns",
        x = "Date",
-       y = "Weekly Return") +
+       y = "Volatility") +
   scale_color_manual(values = c("EUA" = "blue", "NZU" = "red", "CCA" = "green", "HBEA" = "purple")) +
   facet_wrap(~ Series, scales = "free_y") +  # Create a separate plot for each series
   theme_minimal()
 
+
 # Save plots together in one file
-ggsave("Weekly_Returns_Plot.png", bg = "white")  
+#ggsave("Weekly_Returns_Plot.png", bg = "white")  
 
 # Convert the ggplot object to a plotly object
 plotly::ggplotly(a)
 
 # Seperate plots for each series
-# Plot the weekly returns for EUR_EUR
-ggplot(Research_Data_continuously_compounded_weekly_returns, aes(x = Date)) +
-  geom_line(aes(y = EUA, color = "EUR_EUR")) +
-  labs(title = "EUA Weekly Returns",
-       x = "Date",
-       y = "Weekly Return") +
-  scale_color_manual(values = c("EUA" = "blue")) +
-  theme_minimal()  
-
-# Plot the weekly returns for NZ_EUR
-ggplot(Research_Data_continuously_compounded_weekly_returns, aes(x = Date)) +
-  geom_line(aes(y = NZU, color = "NZ_EUR")) +
-  labs(title = "NZU Weekly Returns",
-       x = "Date",
-       y = "Weekly Return") +
-  scale_color_manual(values = c("NZU" = "red")) +
-  theme_minimal()
-
-# Plot the weekly returns for Hubei_EUR
-ggplot(Research_Data_continuously_compounded_weekly_returns, aes(x = Date)) +
-  geom_line(aes(y = HBEA, color = "HBEA")) +
-  labs(title = "HBEA Weekly Returns",
-       x = "Date",
-       y = "Weekly Return") +
-  scale_color_manual(values = c("HBEA" = "green")) +
-  theme_minimal()
-
-# Plot the weekly returns for CCA
-ggplot(Research_Data_continuously_compounded_weekly_returns, aes(x = Date)) +
-  geom_line(aes(y = CCA, color = "CCA")) +
-  labs(title = "CCA Weekly Returns",
-       x = "Date",
-       y = "Weekly Return") +
-  scale_color_manual(values = c("CCA" = "purple")) +
-  theme_minimal()
+# Create 4 separate plots for each series and save them in the same file as a 2 by 2 grid
+plot <- ggplot(Research_Data_continuously_compounded_weekly_returns_long, aes(x = Date, y = Weekly_Return)) +
+  geom_line(aes(color = Series), size = 0.7) +
+  facet_wrap(~ Series, scales = "free", ncol = 2) +  # Create a 2 by 2 grid
+  labs(x = "Date", y = "Volatility") +
+  scale_color_manual(values = c("EU ETS" = "blue", "NZ ETS" = "green", "CA CaT" = "brown", "HB ETS" = "black")) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis to show yearly ticks
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid = element_blank(),  # Remove grid lines
+    axis.title = element_text(size = 16),  # Increase size of axis titles
+    axis.text = element_text(size = 14),  # Increase size of axis labels
+    strip.text = element_text(size = 16, face = "bold", hjust = 0),  # Left-align series labels
+    axis.line.x.bottom = element_line(color = "black", size = 0.5),  # Add x-axis line
+    axis.line.y.left = element_line(color = "black", size = 0.5),  # Add y-axis line
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add axis ticks
+    axis.ticks.length = unit(0.2, "cm")  # Length of the ticks
+  )
 
 # Save plots together in one file
-ggsave("Weekly_Returns_Combo_Plot.png", bg = "white")
-
+ggsave("Weekly_Returns_Plot_Combo.png", plot = plot, width = 12, height = 8, bg = "white")
 #---------------------------------------
 
 #### Plot Weekly Volatility ####
@@ -449,6 +489,9 @@ ggsave("Weekly_Returns_Combo_Plot.png", bg = "white")
 # Plot the weekly volatility as 4 separate charts for each series but merge them into one file
 # Convert xts objects to data frames, capturing Date indices
 Research_Data_annualised_weekly_volatility <- data.frame(Date = index(Research_Data_weekly_volatility), coredata(Research_Data_weekly_volatility))
+
+# Match Column Names to the paper
+colnames(Research_Data_annualised_weekly_volatility) <- c('Date',colnames(Research_Data_weekly_volatility))
 
 # Melt the data for plotting (if using ggplot2 and the data is wide)
 Research_Data_annualised_weekly_volatility_long <- melt(Research_Data_annualised_weekly_volatility, id.vars = "Date", variable.name = "Series", value.name = "Weekly_Volatility")
@@ -463,14 +506,38 @@ p <- ggplot(Research_Data_annualised_weekly_volatility_long, aes(x = Date)) +
   scale_color_manual(values = c("EUR_EUR" = "blue", "NZ_EUR" = "red", "CCA...Front.December...ICE" = "green", "Hubei_EUR" = "purple")) +
   facet_wrap(~ Series, scales = "free_y") +  # Create a separate plot for each series
   theme_minimal()
-  
 
 # Save plots together in one file
-ggsave("Weekly_Volatility_Plot.png", bg = "white")
+#ggsave("Weekly_Volatility_Plot.png", bg = "white")
 
 # Save plots as plotly interactive plots
 # Convert the ggplot object to a plotly object
 plotly::ggplotly(p)
+
+# Seperate plots for each series
+# Create 4 separate plots for each series and save them in the same file as a 2 by 2 grid
+plot <- ggplot(Research_Data_annualised_weekly_volatility_long, aes(x = Date, y = Weekly_Volatility)) +
+  geom_line(aes(color = Series), size = 0.7) +
+  facet_wrap(~ Series, scales = "free", ncol = 2) +  # Create a 2 by 2 grid
+  labs(x = "Date", y = "Volatility") +
+  scale_color_manual(values = c("EU ETS" = "blue", "NZ ETS" = "green", "CA CaT" = "brown", "HB ETS" = "black")) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +  # Set x-axis to show yearly ticks
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid = element_blank(),  # Remove grid lines
+    axis.title = element_text(size = 16),  # Increase size of axis titles
+    axis.text = element_text(size = 14),  # Increase size of axis labels
+    strip.text = element_text(size = 16, face = "bold", hjust = 0),  # Left-align series labels
+    axis.line.x.bottom = element_line(color = "black", size = 0.5),  # Add x-axis line
+    axis.line.y.left = element_line(color = "black", size = 0.5),  # Add y-axis line
+    axis.ticks = element_line(color = "black", size = 0.5),  # Add axis ticks
+    axis.ticks.length = unit(0.2, "cm")  # Length of the ticks
+  )
+
+# Save plots together in one file
+ggsave("Weekly_Volatility_Plot_Combo.png", plot = plot, width = 12, height = 8, bg = "white")
+
 #---------------------------------------
 
 ## Data Export ##

@@ -230,6 +230,10 @@ dev.off()
 
 # Forecast Error Variance Decomposition (FEVD)
 FEVD_returns <- dca$TABLE
+TCI_table_return <- dca$TABLE$TCI
+
+# Remove cTCI from the table
+FEVD_returns <- FEVD_returns[!(rownames(FEVD_returns) %in% c("cTCI")), ]
 
 # Remove the rows named "Inc.Own" and "NPT"
 FEVD_returns <- FEVD_returns[!(rownames(FEVD_returns) %in% c("Inc.Own", "NPT")), ]
@@ -238,6 +242,21 @@ FEVD_returns <- FEVD_returns[!(rownames(FEVD_returns) %in% c("Inc.Own", "NPT")),
 # Create the stargazer table and export to HTML
 stargazer::stargazer(FEVD_returns, type = "html", summary = FALSE, title = "Table 3. Average connectedness matrix of the Return system.", 
                      out = "connectedness_returns.html")
+
+# Create the stargazer table and export to HTML
+stargazer::stargazer(FEVD_returns, type = "html", summary = FALSE, title = "Table 3. Average connectedness matrix of the system.", 
+                     out = "connectedness_returns.html")
+
+# Read the HTML file and modify it to include the caption under the title
+html_lines <- readLines("connectedness_returns.html")
+
+# Insert the caption after the title
+title_index <- which(grepl("Table 3. Average connectedness matrix of the Return system.", html_lines))
+caption <- "<caption>Panel A: Return connectedness (%)</caption>"
+html_lines <- append(html_lines, caption, after = title_index)
+
+# Write the modified HTML content back to the file
+writeLines(html_lines, "connectedness_returns.html")
 
 #----------------------------------
 
