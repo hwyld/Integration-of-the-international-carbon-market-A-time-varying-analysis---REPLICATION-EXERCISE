@@ -57,6 +57,9 @@ summary(vol_zoo)
 any(is.na(vol_zoo))
 any(is.infinite(vol_zoo))
 
+colnames(return_zoo) <- c("EU ETS", "NZ ETS", "CA CaT", "HB ETS")
+colnames(vol_zoo) <- c("EU ETS", "NZ ETS", "CA CaT", "HB ETS")
+
 #----------------------------------
 
 ## Define Event Study Window ##
@@ -230,33 +233,12 @@ dev.off()
 
 # Forecast Error Variance Decomposition (FEVD)
 FEVD_returns <- dca$TABLE
-TCI_table_return <- dca$TABLE$TCI
-
-# Remove cTCI from the table
-FEVD_returns <- FEVD_returns[!(rownames(FEVD_returns) %in% c("cTCI")), ]
 
 # Remove the rows named "Inc.Own" and "NPT"
 FEVD_returns <- FEVD_returns[!(rownames(FEVD_returns) %in% c("Inc.Own", "NPT")), ]
 
-# Put the table into a stargazer table
-# Create the stargazer table and export to HTML
-stargazer::stargazer(FEVD_returns, type = "html", summary = FALSE, title = "Table 3. Average connectedness matrix of the Return system.", 
-                     out = "connectedness_returns.html")
-
-# Create the stargazer table and export to HTML
-stargazer::stargazer(FEVD_returns, type = "html", summary = FALSE, title = "Table 3. Average connectedness matrix of the system.", 
-                     out = "connectedness_returns.html")
-
-# Read the HTML file and modify it to include the caption under the title
-html_lines <- readLines("connectedness_returns.html")
-
-# Insert the caption after the title
-title_index <- which(grepl("Table 3. Average connectedness matrix of the Return system.", html_lines))
-caption <- "<caption>Panel A: Return connectedness (%)</caption>"
-html_lines <- append(html_lines, caption, after = title_index)
-
-# Write the modified HTML content back to the file
-writeLines(html_lines, "connectedness_returns.html")
+# Ensure FEVD_returns is a data frame
+FEVD_returns <- as.data.frame(FEVD_returns)
 
 #----------------------------------
 
@@ -388,10 +370,48 @@ dev.off()
 # Forecast Error Variance Decomposition (FEVD)
 FEVD_vol <- dca$TABLE
 
-# Put the table into a stargazer table
-# Create the stargazer table
-stargazer::stargazer(FEVD_vol, type = "text", summary = FALSE, title = "Table 3. Average connectedness matrix of the Volatility system.", 
-                     out = "table_vol.txt")
+# Remove the rows named "Inc.Own" and "NPT"
+FEVD_vol <- FEVD_vol[!(rownames(FEVD_vol) %in% c("Inc.Own", "NPT")), ]
+
+# Ensure FEVD_returns is a data frame
+FEVD_vol <- as.data.frame(FEVD_vol)
+
+# Put the both FEVD dataframes into a a signle stargazer table
+# Generate the HTML table for FEVD_returns
+stargazer::stargazer(FEVD_returns, type = "html", summary = FALSE, 
+                     title = "Table 3. Average connectedness matrix of the system.", 
+                     out = "FEVD_returns.html", out.header = FALSE)
+
+# Generate the HTML table for FEVD_volatility without title
+stargazer::stargazer(FEVD_vol, type = "html", summary = FALSE, 
+                     title = "", # No title for the second table
+                     out = "FEVD_volatility.html", out.header = FALSE)
+
+# Read the HTML files
+html_lines_returns <- readLines("FEVD_returns.html")
+html_lines_volatility <- readLines("FEVD_volatility.html")
+
+# Insert the caption for returns
+caption_returns <- '<caption style="text-align:left;">Panel A: Return connectedness (%)</caption>'
+table_start_index_returns <- which(grepl("<table", html_lines_returns, fixed = TRUE))[1]
+html_lines_returns <- append(html_lines_returns, caption_returns, after = table_start_index_returns)
+
+# Insert the caption for volatility
+caption_volatility <- '<caption style="text-align:left;">Panel B: Volatility connectedness (%)</caption>'
+table_start_index_volatility <- which(grepl("<table", html_lines_volatility, fixed = TRUE))[1]
+html_lines_volatility <- append(html_lines_volatility, caption_volatility, after = table_start_index_volatility)
+
+# Combine both HTML tables into a single HTML file
+combined_html_lines <- c(html_lines_returns, "<br><br>", html_lines_volatility)
+
+# Add final caption at the bottom
+caption_connectedness <- '<tr><td colspan="7" style="text-align:left;">Aligning with Lyu and Scholtens (2022), this analysis uses first-order VARs (p = 1) as selected by Schwarz information criterion, with 10-step-ahead forecasts (H = 10).</td></tr>'
+# Locate the end of the second table to append the caption
+table_end_index_volatility <- which(grepl("</table>", html_lines_volatility, fixed = TRUE))[1]
+combined_html_lines <- append(combined_html_lines, caption_connectedness, after = length(combined_html_lines) - (length(html_lines_volatility) - table_end_index_volatility))
+
+# Write the combined HTML content back to a new file
+writeLines(combined_html_lines, "combined_connectedness.html")
 #----------------------------------
 
 
@@ -415,3 +435,5 @@ PlotTCI(dca,
 
 # Close the device and save the plot
 dev.off()
+
+#----------------------------------
