@@ -63,8 +63,6 @@ colnames(allowance_price)[1] <- "Date"
 
 head(allowance_price,5)
 
-
-
 # Convert the dataframe to a daily time series
 allowance_price <- as.data.frame(allowance_price)
 
@@ -324,4 +322,4 @@ for (i in 2:ncol(EUR_denom_exchange_rates)) {
 }
 
 # Export as a CSV file
-write.csv(EUR_denom_exchange_rates, "EUR_denom_exchange_rates.csv")
+# write.csv(EUR_denom_exchange_rates, "EUR_denom_exchange_rates.csv")
