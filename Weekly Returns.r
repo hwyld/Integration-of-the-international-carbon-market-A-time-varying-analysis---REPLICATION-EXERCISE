@@ -558,5 +558,4 @@ Research_Data_weekly_volatility_df <- Research_Data_weekly_volatility_df[, c(nco
 # Export the data to CSV files
 write.csv(Research_Data_weekly_returns_df, "Research_Data_weekly_returns.csv", row.names = FALSE)
 write.csv(Research_Data_weekly_volatility_df, "Research_Data_weekly_volatility.csv", row.names = FALSE)
-
 #---------------------------------------

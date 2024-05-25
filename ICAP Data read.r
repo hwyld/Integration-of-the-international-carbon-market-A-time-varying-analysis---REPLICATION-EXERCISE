@@ -198,7 +198,7 @@ ggplot(allowance_price_long, aes(x = Date, y = Value, color = Variable)) +
   labs(caption = "Source: ICAP")
 
 # Save the plot
-ggsave("Allowance_Price_Plot.png",bg = "white")
+#ggsave("Allowance_Price_Plot.png",bg = "white")
 
 ## EUR denominated Allowance prices ##
 EUR_allowance_price_long <- Research_Data_EUR_denom_allowance_prices_trimmed %>% pivot_longer(-Date, names_to = "Variable", values_to = "Value")
@@ -250,7 +250,7 @@ final_plot <- p %>% layout(
 final_plot
 
 # Save the plot
-ggsave("EUR Allowance_Price_Plot.png",bg = "white")
+#ggsave("EUR Allowance_Price_Plot.png",bg = "white")
 
 #---------------------------------------
 
@@ -267,7 +267,7 @@ ggplot(EUR_denom_allowance_prices_long, aes(x = Date, y = Value, color = Variabl
   theme_minimal()
 
 # Save the plot with a white background
-ggsave("EUR_denom_Allowance_Price_Plot.png", bg = "white")
+#ggsave("EUR_denom_Allowance_Price_Plot.png", bg = "white")
 
 #---------------------------------------
 
@@ -287,39 +287,3 @@ htmlwidgets::saveWidget(final_plot, "EUR_Allowance_Price_Plot.html")
 
 # stop the script
 stop()
-
-
-# Extract the monthly average excahnge rates from df denoted as Exchange Rate (EUR) from the ICAP data
-
-# Create a dataframe called EUR_denom_exchange_rates that extracts 
-# column 1 as Date,
-# 6 as EUR to Exchange Rate (EUR), 
-# 19 as USD to Exchange Rate (EUR), 
-# 32 as CAD to Exchange Rate (EUR), 
-# 58 as NZD to Exchange Rate (EUR),
-# 84 as KRW to Exchange Rate (EUR),
-# 97 as CHF to Exchange Rate (EUR),
-# 136 as GBP to Exchange Rate (EUR),
-# 149 as CNH to Exchange Rate (EUR),
-# 251 as CNY to Exchange Rate (EUR),
-EUR_denom_exchange_rates <- df[, c(1, 6, 19, 32, 58, 84, 97, 136, 149, 251)]
-
-# Rename as above
-colnames(EUR_denom_exchange_rates) <- c("Date", "EUR", "USD", "CAD", "NZD", "KRW", "CHF", "GBP", "CNH", "CNY")
-
-# Remove the first 3 rows
-EUR_denom_exchange_rates <- EUR_denom_exchange_rates[-c(1:3), ]
-
-# Convert the dataframe to a daily time series
-EUR_denom_exchange_rates <- as.data.frame(EUR_denom_exchange_rates)
-
-# Convert the Date column to a date format
-EUR_denom_exchange_rates$Date <- as.Date(EUR_denom_exchange_rates$Date, format = "%d.%m.%Y")
-
-# Convert the rest of the columns to numeric
-for (i in 2:ncol(EUR_denom_exchange_rates)) {
-  EUR_denom_exchange_rates[, i] <- as.numeric(EUR_denom_exchange_rates[, i])
-}
-
-# Export as a CSV file
-# write.csv(EUR_denom_exchange_rates, "EUR_denom_exchange_rates.csv")

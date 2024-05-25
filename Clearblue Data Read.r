@@ -62,7 +62,6 @@ dataframes <- lapply(dataframes, as.data.frame)
 # Create the dataframes in the global environment
 list2env(dataframes, envir = .GlobalEnv)
 
-
 #-------------------------------------
 
 ### Data Trimming  ###
@@ -75,7 +74,6 @@ new_zealand_ets_trimmed <- new_zealand_ets[, c(1, ncol(new_zealand_ets))]
 
 # Remove all numeric columns except those that contain CCA in the column name for the WCI series
 wci_trimmed <- WCI[, c(1, grep("CCA", colnames(WCI)))]
-
 
 # Merging multiple data frames using full_join for a full outer join
 merged_data <- eu_ets_trimmed %>%
@@ -237,7 +235,7 @@ final_plot <- p %>% layout(
 htmlwidgets::saveWidget(final_plot, "Clearblue_Price_Plot.html")
 
 # Save the plot
-ggsave("Clearblue_Plot.png",bg = "white")
+#ggsave("Clearblue_Plot.png",bg = "white")
 
 #---------------------------------------
 
@@ -314,7 +312,7 @@ final_plot_EUR <- EUR %>% layout(
 htmlwidgets::saveWidget(final_plot_EUR , "Clearblue_EUR_Price_Plot.html")
 
 # Save the plot
-ggsave("Clearblue_EUR_Price_Plot.png",bg = "white")
+#ggsave("Clearblue_EUR_Price_Plot.png",bg = "white")
 
 #---------------------------------------
 

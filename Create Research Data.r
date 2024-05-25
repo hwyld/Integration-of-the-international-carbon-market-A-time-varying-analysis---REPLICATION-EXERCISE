@@ -240,7 +240,7 @@ final_plot <- p %>% layout(
 )
 
 # Save plot as a PNG file
-ggsave("Forward_Filled_Data_Plot.png", bg = "white")
+#ggsave("Forward_Filled_Data_Plot.png", bg = "white")
 
 ## Subset into individual vectors ##
 # Define the function
@@ -283,5 +283,4 @@ colnames(cleaned_datasets) <- c("Date","EUA", "NZU", "CCA", "HBEA")
 setwd(Git)
 # Final Data Set
 write.csv(cleaned_datasets, "Research_data.csv")
-
 #---------------------------------------
