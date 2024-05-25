@@ -86,8 +86,10 @@ load_packages <- function(update = FALSE) {
 set_working_directories <- function() {
   directories <- list(
     Git = "C:/Users/henry/OneDrive - The University of Melbourne/GitHub/TVP-VAR-for-Carbon-Markets",
-    ICAP_Data = "C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ICAP data",
-    Clearblue_Data = "C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ClearBlue Data/Data used in Paper"
+    ICAP_Data = Git,
+    Clearblue_Data = Git
+    #ICAP_Data = "C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ICAP data",
+    #Clearblue_Data = "C:/Users/henry/OneDrive - The University of Melbourne/Master of Applied Econometrics/2024/Semester 1/Research Methods/Research Paper/ClearBlue Data/Data used in Paper"
   )
 
   for (name in names(directories)) {
